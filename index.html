@@ -1,0 +1,824 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0b1116">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="Brevity">
+<title>Brevity Quest</title>
+<style>
+/* Brevity Quest: offline, single-file study game. No network resources. */
+:root{
+  --bg:#e9eef1; --card:#fbfdfe; --ink:#14202a; --mute:#5e6d7a; --line:#cfd8df; --tint:#dfe7ec;
+  --acc:#0a7d6f; --acc2:#b8860b; --fr:#1d5fd1; --ho:#c3302b; --un:#a8700f; --ok:#2b8547; --bad:#c3302b;
+  --scope:#0e2a24; --phos:#2fe0a0;
+  --display:"Avenir Next Condensed","Arial Narrow","Roboto Condensed",system-ui,sans-serif;
+  --body:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0b1116; --card:#141c23; --ink:#e4ebf0; --mute:#8a98a5; --line:#25313b; --tint:#1a242d;
+  --acc:#2fe0a0; --acc2:#f0c24b; --fr:#6ea8ff; --ho:#ff6d63; --un:#e5ab45; --ok:#62cf82; --bad:#ff6d63;
+  --scope:#06140f; --phos:#2fe0a0; color-scheme:dark; } }
+:root[data-theme="dark"]{
+  --bg:#0b1116; --card:#141c23; --ink:#e4ebf0; --mute:#8a98a5; --line:#25313b; --tint:#1a242d;
+  --acc:#2fe0a0; --acc2:#f0c24b; --fr:#6ea8ff; --ho:#ff6d63; --un:#e5ab45; --ok:#62cf82; --bad:#ff6d63;
+  --scope:#06140f; --phos:#2fe0a0; color-scheme:dark; }
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:max(12px,env(safe-area-inset-top,0px)) max(28px,env(safe-area-inset-bottom,0px))}
+.wrap{max-width:560px;margin:0 auto;display:grid;gap:14px}
+h1,h2,h3{font-family:var(--display);font-weight:700;text-transform:uppercase;letter-spacing:.03em;margin:0;line-height:1.05;text-wrap:balance}
+button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
+.lbl{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+.row{display:flex;gap:10px;align-items:center}
+.grow{flex:1;min-width:0}
+.tab{font-variant-numeric:tabular-nums}
+
+/* HUD */
+.hud{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center}
+.ring{width:84px;height:84px}
+.ring circle{fill:none;stroke-width:8}
+.rank{font-family:var(--display);font-size:24px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;line-height:1}
+.xpbar{height:8px;background:var(--tint);border-radius:99px;overflow:hidden;margin-top:6px}
+.xpbar i{display:block;height:100%;background:var(--acc);border-radius:99px;transition:width .5s}
+.streak{text-align:center;font-family:var(--display);font-size:28px;font-weight:700;line-height:1}
+.streak small{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--mute);font-weight:400}
+.count{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.count b{font-family:var(--display);font-size:30px;color:var(--acc2)}
+
+/* Mission buttons */
+.big{display:block;width:100%;text-align:left;border:0;border-radius:14px;padding:16px;background:var(--acc);color:var(--bg)}
+.big h2{font-size:28px}
+.big p{margin:4px 0 0;font-size:14px;opacity:.85}
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mode{border:1px solid var(--line);background:var(--card);border-radius:14px;padding:12px;text-align:left;display:grid;gap:3px;min-height:92px}
+.mode h3{font-size:20px}
+.mode span{font-size:13px;color:var(--mute)}
+.mode em{font-style:normal;font-family:var(--mono);font-size:11px;color:var(--acc2)}
+.sorties{display:grid;gap:8px}
+.sortie{display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:center;border:1px solid var(--line);background:var(--card);border-radius:12px;padding:10px 12px;text-align:left;width:100%}
+.sortie .n{font-family:var(--display);font-size:22px;font-weight:700;color:var(--mute);text-align:center}
+.sortie h3{font-size:17px}
+.bar{height:6px;background:var(--tint);border-radius:99px;overflow:hidden;margin-top:5px;display:flex}
+.bar i{display:block;height:100%}
+.stars{font-size:16px;letter-spacing:1px;color:var(--acc2);white-space:nowrap}
+.stars .off{color:var(--line)}
+.links{display:flex;gap:8px;flex-wrap:wrap}
+.ghost{border:1px solid var(--line);background:transparent;border-radius:10px;padding:9px 12px;font-size:14px;color:var(--mute)}
+
+/* Play */
+.top{display:flex;align-items:center;gap:10px}
+.x{border:1px solid var(--line);background:var(--card);border-radius:10px;width:40px;height:40px;font-size:18px;line-height:1;flex:none}
+.prog{flex:1;height:10px;background:var(--tint);border-radius:99px;overflow:hidden}
+.prog i{display:block;height:100%;background:var(--acc);transition:width .3s}
+.pill{font-family:var(--mono);font-size:12px;border:1px solid var(--line);border-radius:99px;padding:4px 9px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.pill.hot{border-color:var(--acc2);color:var(--acc2)}
+.scope{position:relative;background:var(--scope);border-radius:16px;padding:12px;overflow:hidden;border:1px solid var(--line)}
+.scope::before{content:"";position:absolute;inset:-50%;background:conic-gradient(from 0deg,transparent 0 84%,rgba(47,224,160,.18) 96%,rgba(47,224,160,.35) 100%);animation:sweep 4s linear infinite;pointer-events:none}
+.scope::after{content:"";position:absolute;inset:0;background:radial-gradient(circle,transparent 30%,transparent 31%,rgba(47,224,160,.12) 31.5%,transparent 32.5%,transparent 60%,rgba(47,224,160,.12) 60.5%,transparent 61.5%);pointer-events:none}
+@keyframes sweep{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.scope::before{animation:none}}
+.scope .vis{position:relative;z-index:1;background:var(--card);border-radius:10px}
+.vis{display:block;width:100%;max-width:340px;height:auto;aspect-ratio:3/2;margin:0 auto}
+.kind{color:var(--phos);font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;position:relative;z-index:1;margin-bottom:8px}
+.prompt{font-size:18px;margin:0}
+.def{font-size:16px;margin:0}
+.termq{font-family:var(--display);font-size:40px;font-weight:700;text-align:center;letter-spacing:.03em;padding-block:18px}
+.opts{display:grid;gap:8px}
+.opt{border:2px solid var(--line);background:var(--card);border-radius:12px;padding:13px 14px;text-align:left;font-size:16px;min-height:52px}
+.opt.t{font-family:var(--display);font-size:21px;font-weight:700;letter-spacing:.03em;text-transform:uppercase}
+.opt.good{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 16%,var(--card))}
+.opt.bad{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 14%,var(--card))}
+.opt:disabled{cursor:default}
+.typebox{display:grid;gap:8px}
+.typebox input{font-family:var(--display);font-size:26px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:12px 14px;border-radius:12px;border:2px solid var(--line);background:var(--card);color:var(--ink);width:100%}
+.typebox input:focus{outline:none;border-color:var(--acc)}
+.btns{display:flex;gap:8px}
+.go{flex:1;border:0;border-radius:12px;padding:14px;background:var(--acc);color:var(--bg);font-family:var(--display);font-size:20px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.go.alt{background:var(--tint);color:var(--ink)}
+.fb{border-radius:14px;padding:14px;display:grid;gap:8px;border:2px solid var(--ok);background:color-mix(in srgb,var(--ok) 10%,var(--card))}
+.fb.miss{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 9%,var(--card))}
+.fb h3{font-size:22px}
+.fb .ans{font-family:var(--display);font-size:26px;font-weight:700;letter-spacing:.03em}
+.hook{margin:0;font-size:15px}
+.hook b{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--acc2)}
+.why{margin:0;font-size:15px;color:var(--mute)}
+.intro{display:grid;gap:10px}
+.intro .tname{font-family:var(--display);font-size:38px;font-weight:700;letter-spacing:.03em;text-align:center}
+.newtag{display:inline-block;font-family:var(--mono);font-size:11px;letter-spacing:.1em;background:var(--acc2);color:var(--bg);border-radius:99px;padding:2px 8px}
+.timer{font-family:var(--display);font-size:30px;font-weight:700;min-width:56px;text-align:right;font-variant-numeric:tabular-nums}
+.timer.low{color:var(--bad)}
+.float{position:fixed;left:50%;top:38%;transform:translateX(-50%);font-family:var(--display);font-weight:700;font-size:34px;color:var(--acc2);pointer-events:none;animation:up .9s ease-out forwards;z-index:30;text-shadow:0 2px 8px rgba(0,0,0,.25)}
+@keyframes up{from{opacity:1;transform:translate(-50%,0)}to{opacity:0;transform:translate(-50%,-70px)}}
+.shake{animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-6px)}50%{transform:translateX(6px)}75%{transform:translateX(-3px)}}
+
+/* Results */
+.res{text-align:center;display:grid;gap:8px;padding-block:8px}
+.res .big-n{font-family:var(--display);font-size:72px;font-weight:700;line-height:1;color:var(--acc)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{background:var(--tint);border-radius:10px;padding:10px;text-align:center}
+.stat b{display:block;font-family:var(--display);font-size:26px;font-variant-numeric:tabular-nums}
+.missed{display:grid;gap:8px}
+.missed div{border-left:3px solid var(--bad);padding:4px 0 4px 10px;font-size:14px}
+.missed b{font-family:var(--display);font-size:18px;letter-spacing:.03em;display:block}
+.banner{background:var(--acc2);color:var(--bg);border-radius:12px;padding:10px;font-family:var(--display);font-size:22px;font-weight:700;text-transform:uppercase;text-align:center}
+
+/* Library */
+.search{font:inherit;font-size:16px;padding:11px 12px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);width:100%}
+.lib{display:grid;gap:10px}
+.lc{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;display:grid;gap:6px}
+.lc .vis{max-width:220px}
+.lc h3{font-size:22px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.dots{display:flex;gap:3px}
+.dots i{width:8px;height:8px;border-radius:50%;background:var(--line)}
+.dots i.on{background:var(--acc)}
+.lc .plain{margin:0;color:var(--mute);font-size:14px}
+.clh{font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--acc);margin-top:10px}
+.confetti{position:fixed;top:-10px;width:9px;height:14px;z-index:40;pointer-events:none;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(105vh) rotate(720deg)}}
+.note{font-size:13px;color:var(--mute);margin:0}
+
+/* Memory ladder */
+.lvl{display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;border-radius:99px;padding:2px 8px;background:var(--tint);color:var(--mute)}
+.lvl.l6{background:var(--acc);color:var(--bg)}
+.hint{font-family:var(--mono);font-size:20px;letter-spacing:.08em;text-align:center;color:var(--phos);position:relative;z-index:1;margin-top:8px;word-break:break-word}
+.blank{display:inline-block;min-width:3.2em;border-bottom:2px solid var(--acc2);color:var(--acc2);font-family:var(--mono);font-size:13px;text-align:center}
+textarea.say{font:inherit;font-size:16px;min-height:110px;padding:12px;border-radius:12px;border:2px solid var(--line);background:var(--card);color:var(--ink);width:100%;resize:vertical}
+textarea.say:focus{outline:none;border-color:var(--acc)}
+.kw{background:color-mix(in srgb,var(--ok) 28%,transparent);border-radius:3px;padding:0 2px}
+.kwmiss{text-decoration:underline;text-decoration-color:var(--bad);text-decoration-thickness:2px;text-underline-offset:3px}
+.self{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.self button{border:2px solid var(--line);background:var(--card);border-radius:12px;padding:12px 6px;font-family:var(--display);font-size:18px;font-weight:700;text-transform:uppercase}
+.self button.sug{border-color:var(--acc2)}
+.ladder{display:flex;gap:3px;margin-top:6px}
+.ladder i{flex:1;height:8px;border-radius:2px;background:var(--tint)}
+details.how{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 14px}
+details.how summary{cursor:pointer;font-family:var(--display);font-size:18px;font-weight:700;text-transform:uppercase}
+details.how ol{margin:8px 0 4px;padding-left:20px;display:grid;gap:4px;font-size:14px}
+.modes .mode.wide{grid-column:1/-1}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <noscript><p>This game needs JavaScript. If you opened it in the iPhone Files preview, open it in the Documents app (Readdle) instead.</p></noscript>
+  <section id="home"></section>
+  <section id="play" hidden></section>
+  <section id="lib" hidden></section>
+</div>
+<script>
+/* Visual grammar for brevity terms. viewBox 0 0 120 80.
+   Colors: f friendly, h hostile, u unknown, n ink, m muted, a accent, g good. */
+var V=(function(){
+var C={f:'var(--fr)',h:'var(--ho)',u:'var(--un)',n:'var(--ink)',m:'var(--mute)',a:'var(--acc)',g:'var(--ok)',b:'var(--card)'};
+function c(k){return C[k]||k;}
+function L(x1,y1,x2,y2,k,o){o=o||{};return '<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" style="stroke:'+c(k||'n')+';stroke-width:'+(o.w||1.6)+(o.d?';stroke-dasharray:'+o.d:'')+';stroke-linecap:round"/>';}
+function P(d,k,o){o=o||{};return '<path d="'+d+'" style="fill:'+(o.fill?c(o.fill):'none')+';stroke:'+c(k||'n')+';stroke-width:'+(o.w||1.6)+(o.d?';stroke-dasharray:'+o.d:'')+';stroke-linecap:round;stroke-linejoin:round"/>';}
+function ah(x,y,ang,k,s){s=s||5;var a1=ang+2.6,a2=ang-2.6;return '<polygon points="'+x+','+y+' '+(x+s*Math.cos(a1)).toFixed(1)+','+(y+s*Math.sin(a1)).toFixed(1)+' '+(x+s*Math.cos(a2)).toFixed(1)+','+(y+s*Math.sin(a2)).toFixed(1)+'" style="fill:'+c(k||'n')+'"/>';}
+function A(x1,y1,x2,y2,k,o){return L(x1,y1,x2,y2,k,o)+ah(x2,y2,Math.atan2(y2-y1,x2-x1),k);}
+function Q(x1,y1,cx,cy,x2,y2,k,o){return P('M'+x1+','+y1+' Q'+cx+','+cy+' '+x2+','+y2,k,o)+ah(x2,y2,Math.atan2(y2-cy,x2-cx),k);}
+function J(x,y,r,k,s){s=s||1;return '<path transform="translate('+x+','+y+') rotate('+(r||0)+') scale('+s+')" d="M0,-9 L2,-3 L9,2 L9,4 L2,2.5 L1.5,6 L4,8 L4,9.5 L0,8.5 L-4,9.5 L-4,8 L-1.5,6 L-2,2.5 L-9,4 L-9,2 L-2,-3 Z" style="fill:'+c(k||'f')+'"/>';}
+function R(cx,cy,r,k,o){o=o||{};return '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" style="fill:'+(o.fill?c(o.fill):'none')+';stroke:'+c(k||'n')+';stroke-width:'+(o.w||1.4)+(o.d?';stroke-dasharray:'+o.d:'')+'"/>';}
+function D(x,y,r,k){return '<circle cx="'+x+'" cy="'+y+'" r="'+(r||2.5)+'" style="fill:'+c(k||'n')+'"/>';}
+function T(x,y,t,k,s,w){return '<text x="'+x+'" y="'+y+'" text-anchor="middle" style="fill:'+c(k||'n')+';font:'+(w||700)+' '+(s||10)+'px var(--mono)">'+t+'</text>';}
+function RECT(x,y,w,h,k,o){o=o||{};return '<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="'+(o.rx==null?3:o.rx)+'" style="fill:'+(o.fill?c(o.fill):'none')+';stroke:'+c(k||'n')+';stroke-width:'+(o.w||1.4)+(o.d?';stroke-dasharray:'+o.d:'')+'"/>';}
+function EYE(x,y,k,cross){var s=P('M'+(x-10)+','+y+' Q'+x+','+(y-9)+' '+(x+10)+','+y+' Q'+x+','+(y+9)+' '+(x-10)+','+y+' Z',k||'n')+D(x,y,3,k||'n');if(cross)s+=L(x-11,y-8,x+11,y+8,'h',{w:2.2});return s;}
+function SCOPE(cx,cy,r,sweep){var s=R(cx,cy,r,'m')+R(cx,cy,r*0.55,'m',{d:'2 3',w:1})+L(cx-r,cy,cx+r,cy,'m',{w:.8})+L(cx,cy-r,cx,cy+r,'m',{w:.8});if(sweep)s+=L(cx,cy,cx+r*0.7,cy-r*0.7,'a',{w:1.6});return s;}
+function BULL(cx,cy){return R(cx,cy,22,'m')+R(cx,cy,14,'m')+R(cx,cy,6,'m')+D(cx,cy,2.5,'a');}
+function GROUND(y){return L(6,y,114,y,'m',{w:1.4})+P('M10,'+(y+4)+' l4,-4 M24,'+(y+4)+' l4,-4 M38,'+(y+4)+' l4,-4 M52,'+(y+4)+' l4,-4 M66,'+(y+4)+' l4,-4 M80,'+(y+4)+' l4,-4 M94,'+(y+4)+' l4,-4 M108,'+(y+4)+' l4,-4','m',{w:1});}
+function TGT(x,y,k){return R(x,y,6,k||'h')+L(x-10,y,x-3,y,k||'h')+L(x+3,y,x+10,y,k||'h')+L(x,y-10,x,y-3,k||'h')+L(x,y+3,x,y+10,k||'h');}
+function MSL(x,y,r,k){return '<g transform="translate('+x+','+y+') rotate('+(r||0)+')"><path d="M0,-8 L1.6,-5 L1.6,5 L3.5,8 L-3.5,8 L-1.6,5 L-1.6,-5 Z" style="fill:'+c(k||'f')+'"/></g>';}
+function BOMB(x,y,k,wing){var s='<g transform="translate('+x+','+y+')"><ellipse cx="0" cy="0" rx="2.6" ry="6" style="fill:'+c(k||'n')+'"/><path d="M-3,6 L3,6 L0,3 Z" style="fill:'+c(k||'n')+'"/>';if(wing)s+='<path d="M-8,0 L8,0" style="stroke:'+c(k||'n')+';stroke-width:1.6"/>';return s+'</g>';}
+function HELO(x,y,k){k=k||'f';return '<g transform="translate('+x+','+y+')"><ellipse cx="0" cy="0" rx="8" ry="4.5" style="fill:'+c(k)+'"/><path d="M6,-1 L16,-2 L16,1 L6,2 Z" style="fill:'+c(k)+'"/><line x1="-12" y1="-7" x2="12" y2="-7" style="stroke:'+c(k)+';stroke-width:1.8"/><line x1="0" y1="-7" x2="0" y2="-4" style="stroke:'+c(k)+';stroke-width:1.6"/><line x1="-6" y1="7" x2="6" y2="7" style="stroke:'+c(k)+';stroke-width:1.4"/></g>';}
+function LZ(x,y,k){return R(x,y,10,k||'n')+T(x,y+4,'H',k||'n',11);}
+function ZIG(x1,y1,x2,y2,k){var n=7,s='M'+x1+','+y1;for(var i=1;i<=n;i++){var t=i/n,x=x1+(x2-x1)*t,y=y1+(y2-y1)*t,off=(i%2?1:-1)*4;var nx=-(y2-y1),ny=(x2-x1),m=Math.sqrt(nx*nx+ny*ny)||1;if(i<n){x+=nx/m*off;y+=ny/m*off;}s+=' L'+x.toFixed(1)+','+y.toFixed(1);}return P(s,k||'h',{w:1.6});}
+function STOP(x,y,s){s=s||10;var p=[];for(var i=0;i<8;i++){var a=Math.PI/8+i*Math.PI/4;p.push((x+s*Math.cos(a)).toFixed(1)+','+(y+s*Math.sin(a)).toFixed(1));}return '<polygon points="'+p.join(' ')+'" style="fill:'+c('h')+'"/>'+L(x-s*.45,y,x+s*.45,y,'b',{w:2.4});}
+function OK(x,y,k){return P('M'+(x-6)+','+y+' L'+(x-2)+','+(y+4)+' L'+(x+6)+','+(y-5),k||'g',{w:2.6});}
+function NO(x,y,k){return L(x-5,y-5,x+5,y+5,k||'h',{w:2.4})+L(x+5,y-5,x-5,y+5,k||'h',{w:2.4});}
+function WAVES(x,y,k,dir,n){dir=dir||0;n=n||3;var s='';for(var i=1;i<=n;i++){var r=4+i*4;s+='<path transform="translate('+x+','+y+') rotate('+dir+')" d="M'+(r*Math.cos(-0.7)).toFixed(1)+','+(r*Math.sin(-0.7)).toFixed(1)+' A'+r+','+r+' 0 0 1 '+(r*Math.cos(0.7)).toFixed(1)+','+(r*Math.sin(0.7)).toFixed(1)+'" style="fill:none;stroke:'+c(k||'h')+';stroke-width:1.5;stroke-linecap:round"/>';}return s;}
+function DISH(x,y,k){k=k||'h';return P('M'+(x-8)+','+(y-6)+' Q'+x+','+(y+6)+' '+(x+8)+','+(y-6),k,{w:2})+L(x,y,x,y+8,k)+L(x-5,y+8,x+5,y+8,k);}
+function RADIO(x,y,k){k=k||'n';return RECT(x-9,y-6,18,13,k,{rx:2})+L(x-5,y-6,x-9,y-15,k)+D(x+4,y+.5,2.6,k)+L(x-6,y-2,x-1,y-2,k,{w:1})+L(x-6,y+2,x-1,y+2,k,{w:1});}
+function BUB(x,y,w,h,k,inner){k=k||'n';return P('M'+x+','+y+' h'+w+' v'+h+' h-'+(w-10)+' l-6,6 v-6 h-4 Z',k,{w:1.4})+(inner||'');}
+function DROP(x,y,k,fill){k=k||'a';return P('M'+x+','+(y-9)+' Q'+(x+8)+','+(y+1)+' '+x+','+(y+7)+' Q'+(x-8)+','+(y+1)+' '+x+','+(y-9)+' Z',k,{fill:fill?k:null,w:1.6});}
+function CLOCK(x,y,k){k=k||'n';return R(x,y,9,k)+L(x,y,x,y-6,k)+L(x,y,x+4,y+2,k);}
+function TLINE(y,ticks){var s=L(10,y,110,y,'m',{w:1.6});for(var i=0;i<(ticks||5);i++){var x=10+i*100/((ticks||5)-1);s+=L(x,y-4,x,y+4,'m',{w:1.2});}return s;}
+function BOX(x,y,k,inner){return RECT(x-12,y-8,24,16,k||'n',{rx:3})+(inner||'');}
+function LIGHTS(on){var cols=['g','u','h'],s=RECT(48,6,24,68,'m',{rx:6});for(var i=0;i<3;i++)s+=R(60,18+i*22,8,cols[i],{fill:i===on?cols[i]:null,w:1.8});return s;}
+function ALT(x,ys,k){var s=L(x,8,x,72,'m',{w:1.6});for(var i=0;i<6;i++)s+=L(x-3,12+i*12,x+3,12+i*12,'m',{w:1});return s;}
+function SAT(x,y,k){k=k||'n';return RECT(x-4,y-4,8,8,k,{fill:k,rx:1})+RECT(x-16,y-3,10,6,k,{rx:0,w:1.2})+RECT(x+6,y-3,10,6,k,{rx:0,w:1.2});}
+function svg(inner,label){return '<svg viewBox="0 0 120 80" role="img" aria-label="'+(label||'')+'" class="vis">'+inner+'</svg>';}
+var G={
+/* SIGHT & PICTURE */
+"TALLY":function(){return EYE(20,40)+L(32,40,88,30,'n',{d:'3 3'})+J(96,28,-100,'h',1.2);},
+"NO JOY":function(){return EYE(20,40,'n',true)+L(32,40,82,30,'m',{d:'2 4'})+J(96,28,-100,'h',1.2)+T(96,52,'?','h',14);},
+"VISUAL":function(){return EYE(20,40)+L(32,40,88,30,'n',{d:'3 3'})+J(96,28,-100,'f',1.2);},
+"CONTACT(S)":function(){return SCOPE(60,40,30,true)+D(74,28,3.5,'u')+R(74,28,7,'u',{w:1});},
+"CAPTURED":function(){return J(30,16,90,'f',1)+L(38,20,80,58,'a',{d:'3 2'})+GROUND(66)+'<rect x="74" y="52" width="12" height="8" rx="1" style="fill:var(--ho)"/>'+P('M66,46 v-4 h4 M94,46 v-4 h-4 M66,62 v4 h4 M94,62 v4 h-4','a',{w:1.8});},
+"PICTURE":function(){return J(22,52,0,'f',1.2)+BUB(34,14,26,18,'f',T(47,28,'?','f',13))+SCOPE(92,42,20)+D(98,34,2.5,'h')+D(84,48,2.5,'h')+D(102,50,2.5,'u');},
+"NEW PICTURE":function(){return SCOPE(42,40,26)+D(50,30,2.5,'m')+D(34,48,2.5,'m')+L(22,20,62,60,'h',{w:2})+Q(78,30,104,22,104,48,'a',{w:2})+SCOPE(100,58,0)+D(96,62,3,'h')+D(108,56,3,'u');},
+"BOGEY DOPE":function(){return J(24,58,0,'f',1.2)+BUB(10,10,26,17,'f',T(23,23,'?','f',12))+A(30,52,80,26,'f',{d:'3 3'})+D(90,20,3.5,'u')+D(98,26,3.5,'u');},
+"BRAA":function(){return J(60,62,0,'f',1.3)+L(60,50,60,14,'m',{d:'2 3',w:1})+A(60,50,94,20,'a',{w:1.8})+P('M60,36 A14,14 0 0 1 70,40','a',{w:1.2})+J(100,16,-130,'h',1);},
+"BULLSEYE":function(){return BULL(46,42)+A(46,42,96,20,'a',{w:1.6})+D(100,18,3.5,'u');},
+"POSIT":function(){return J(20,58,0,'f',1.1)+BUB(30,10,24,17,'f',T(42,23,'?','f',12))+BULL(84,44)+J(94,32,45,'f',1.1);},
+"SAM":function(){return GROUND(66)+DISH(26,52,'h')+P('M30,60 Q60,56 82,22','m',{d:'2 3'})+MSL(84,18,35,'h')+EYE(100,58);},
+"GROUP":function(){return R(60,40,28,'m',{d:'4 3'})+J(48,34,-90,'h',1)+J(68,46,-90,'h',1)+J(70,30,-90,'h',1);},
+"HEAVY":function(){return R(52,40,28,'m',{d:'4 3'})+J(40,30,-90,'h',.9)+J(58,30,-90,'h',.9)+J(42,50,-90,'h',.9)+J(62,50,-90,'h',.9)+T(100,46,'3+','h',15);},
+"LEAD-TRAIL":function(){return R(60,40,30,'m',{d:'4 3'})+J(60,22,180,'h',1.1)+J(60,56,180,'h',1.1)+L(80,22,80,56,'a',{w:1.2})+L(76,22,84,22,'a',{w:1.2})+L(76,56,84,56,'a',{w:1.2});},
+"HOLDING HANDS":function(){return J(50,40,0,'f',1.4)+J(70,44,0,'f',1.4)+P('M54,58 Q60,64 66,58','f',{w:1.4});},
+"FLANK":function(){return J(60,64,0,'f',1.2)+L(60,52,60,10,'m',{d:'2 3',w:1})+J(64,24,-60,'h',1.4)+A(60,26,40,38,'h',{d:'2 2',w:1.2});},
+/* ID & IFF */
+"BOGEY":function(){return J(60,40,-30,'u',1.8)+T(88,30,'?','u',18);},
+"HOSTILE":function(){return J(52,40,-60,'h',1.6)+TGT(52,40,'n')+OK(92,40);},
+"STRANGER":function(){return RECT(10,14,62,52,'m',{d:'4 3'})+J(26,40,90,'f',1)+J(56,40,-90,'h',1)+J(96,22,180,'m',1.2)+A(96,34,96,62,'m',{w:1.2});},
+"CHAMELEON":function(){return DISH(20,46,'h')+P('M34,30 q5,-8 10,0 t10,0 t10,0','h')+A(70,30,80,30,'n')+P('M86,30 l4,-8 l4,8 l4,-8 l4,8 l4,-8','u')+T(60,66,'same freq, new look','m',8,500);},
+"INVESTIGATE":function(){return TGT(40,40,'u')+R(76,36,12,'n',{w:2})+L(85,45,98,58,'n',{w:3})+T(76,40,'?','n',11);},
+"SQUAWK":function(){return BOX(40,44,'n',T(40,47,'IFF','n',8))+WAVES(54,44,'f',0,3)+J(94,44,-90,'f',1.1);},
+"PARROT":function(){return RECT(34,26,52,30,'n',{rx:4})+T(60,45,'IFF','n',12)+L(78,26,84,12,'n')+D(84,11,2.5,'n');},
+"SWEET":function(){return BOX(42,40,'n',T(42,43,'SYS','n',8))+OK(82,40,'g');},
+"BENT":function(){return BOX(42,40,'n',T(42,43,'SYS','n',8))+NO(82,40,'h');},
+/* STOP & GO */
+"KNOCK-IT-OFF":function(){return STOP(60,40,13)+J(20,18,90,'f',.9)+J(100,18,-90,'h',.9)+J(20,62,90,'f',.9)+J(100,62,-90,'h',.9);},
+"TERMINATE":function(){return RECT(8,16,56,48,'a',{d:'4 3'})+J(22,40,90,'f',1)+J(50,40,-90,'h',1)+STOP(36,22,6)+J(88,28,90,'f',.9)+A(96,28,112,28,'m')+J(88,56,90,'h',.9)+A(96,56,112,56,'m');},
+"ABORT":function(){return J(28,30,90,'f',1.3)+BOMB(32,42,'n')+L(64,10,64,70,'m',{d:'3 3'})+A(38,48,60,60,'m',{d:'2 3'})+NO(64,40,'h')+TGT(96,60,'h');},
+"CEASE":function(){return WAVES(26,40,'a',0,3)+RECT(56,26,8,28,'h',{fill:'h',rx:1})+RECT(70,26,8,28,'h',{fill:'h',rx:1})+T(98,45,'stop','m',8,500);},
+"SCRAM":function(){return J(90,40,-90,'h',1.2)+J(52,40,-90,'f',1.2)+A(42,40,12,40,'f',{w:2.2})+L(46,30,30,30,'f',{w:1})+L(46,50,30,50,'f',{w:1});},
+"BREAK AWAY":function(){return J(66,26,90,'f',2)+L(38,26,52,26,'a',{d:'2 2'})+J(34,32,90,'f',1)+A(30,40,16,62,'h',{w:2})+DROP(54,46,'a');},
+"COMMIT":function(){return J(20,30,90,'f',1)+J(20,52,90,'f',1)+A(32,30,78,38,'f',{w:2})+A(32,52,78,44,'f',{w:2})+R(98,40,12,'m',{d:'3 3'})+D(94,36,2.5,'h')+D(102,44,2.5,'h');},
+/* WEAPONS & FIRES */
+"CHERRY":function(){return LZ(60,46,'n')+D(30,30,3.5,'h')+D(88,26,3.5,'h')+D(92,60,3.5,'h')+D(28,62,3.5,'h')+HELO(60,14,'m')+NO(60,28,'h');},
+"ICE":function(){return LZ(60,52,'n')+HELO(60,16,'f')+A(60,24,60,38,'f')+OK(96,30,'g');},
+"CLEARED HOT":function(){return RADIO(18,52,'n')+BUB(32,30,24,16,'g',OK(44,38,'g'))+J(78,22,90,'f',1.2)+BOMB(80,34,'n')+TGT(96,64,'h');},
+"CONTINUE DRY":function(){return J(28,30,90,'f',1.3)+BOMB(30,42,'n')+NO(30,42,'h')+A(42,30,104,30,'f',{w:1.8})+TGT(76,62,'h');},
+"SMACK":function(){return P('M20,20 h80 M20,40 h80 M20,60 h80 M40,10 v60 M60,10 v60 M80,10 v60','m',{w:.8})+TGT(60,40,'h')+OK(96,16,'g');},
+"TARGET":function(){return J(22,24,90,'f',1.1)+A(32,30,82,52,'a',{d:'3 2'})+TGT(92,58,'h')+RADIO(20,60,'n');},
+"LASER ON":function(){return RADIO(18,52,'n')+BUB(32,28,30,16,'a',T(47,40,'ON','a',9))+J(92,20,180,'f',1.2)+L(92,32,92,50,'h',{d:'2 2'});},
+"LASING":function(){return J(28,16,90,'f',1.2)+L(32,22,82,58,'h',{w:2.2})+GROUND(66)+TGT(86,58,'h');},
+"SPARKLE":function(){return J(28,16,90,'f',1.2)+L(32,22,82,56,'a',{d:'1 3',w:2})+GROUND(66)+P('M86,52 l2,-8 l2,8 l8,2 l-8,2 l-2,8 l-2,-8 l-8,-2 Z','a',{fill:'a',w:1});},
+"FOX (1/2/3)":function(){return J(20,40,90,'f',1.3)+MSL(50,40,90,'f')+L(36,40,42,40,'m',{d:'1 2'})+A(60,40,86,40,'f',{d:'3 3'})+J(100,40,-90,'h',1.3);},
+"MAGNUM":function(){return J(16,22,90,'f',1.1)+MSL(46,32,120,'f')+A(54,38,82,54,'f',{d:'3 3'})+GROUND(68)+DISH(94,58,'h')+WAVES(94,52,'h',-90,2);},
+"PIG(S)":function(){return J(16,16,90,'f',1)+P('M28,22 Q70,22 86,54','m',{d:'2 3'})+BOMB(60,26,'f',true)+GROUND(68)+TGT(90,58,'h');},
+"AWAY":function(){return J(40,20,90,'f',1.4)+BOMB(52,46,'f')+L(46,32,50,38,'m',{w:1})+L(56,32,54,38,'m',{w:1})+A(70,52,92,64,'m',{d:'2 3'});},
+"FUMBLE":function(){return GROUND(66)+TGT(40,56,'h')+P('M90,58 l3,-9 l3,9 l7,-4 l-3,8','a',{w:1.8})+A(60,14,88,50,'m',{d:'2 3'})+NO(40,30,'h');},
+"GRANDSLAM":function(){return J(24,30,-90,'h',1)+NO(24,30,'n')+J(52,30,-90,'h',1)+NO(52,30,'n')+J(80,30,-90,'h',1)+NO(80,30,'n')+OK(60,60,'g');},
+"MILLER TIME":function(){return TLINE(56,5)+D(85,56,4,'a')+J(30,22,90,'f',1)+BOMB(44,30,'m')+OK(60,26,'g')+A(80,22,104,22,'f',{w:1.8});},
+"REMINGTON":function(){return J(60,40,0,'f',2.2)+RECT(26,24,6,22,'m',{d:'2 2',rx:1})+RECT(88,24,6,22,'m',{d:'2 2',rx:1})+T(60,74,'gun only','m',8,500);},
+"LEAKER":function(){return L(56,8,56,72,'f',{w:3,d:'8 4'})+J(32,40,90,'h',1.2)+A(42,40,96,40,'h',{w:2})+J(102,40,90,'f',.8);},
+"SQUIRTER":function(){return R(40,44,22,'m',{d:'4 3'})+'<rect x="34" y="40" width="14" height="8" rx="2" style="fill:var(--ho)"/>'+A(52,44,104,30,'h',{w:2});},
+"SHOPPING":function(){return J(26,46,90,'f',1.3)+BOMB(28,58,'n')+BUB(40,14,30,18,'f',T(55,27,'?','f',12))+RADIO(96,50,'n');},
+"BAD MAP":function(){return RECT(18,12,64,50,'n',{rx:2})+P('M18,46 L46,26 L82,40 L82,62 L18,62 Z','m',{fill:'m',w:1})+NO(96,36,'h');},
+"SCAN":function(){return P('M60,70 L28,18 A60,60 0 0 1 92,18 Z','a',{d:'3 3'})+J(60,68,0,'f',1)+Q(40,28,60,18,80,28,'a',{w:1.4});},
+/* MANEUVER & ALTITUDE */
+"BREAK":function(){return J(30,56,0,'f',1.3)+Q(30,44,30,14,58,22,'f',{w:2.6})+J(96,66,-45,'h',1)+L(88,58,72,48,'m',{d:'1 3'});},
+"CHECK":function(){return J(40,60,0,'f',1.3)+Q(40,48,40,26,62,22,'f',{w:1.6})+L(62,22,106,22,'f',{d:'3 3',w:1.2});},
+"HOOK":function(){return J(46,62,0,'f',1.3)+P('M46,50 L46,28 A14,14 0 0 1 74,28','f',{w:2})+A(74,28,74,60,'f',{w:2});},
+"EXTENDING":function(){return J(30,40,90,'f',1.2)+A(40,40,96,40,'f',{w:2})+Q(96,52,70,64,44,54,'f',{d:'3 3'})+T(84,22,'back in','m',8,500);},
+"COLD":function(){return J(96,40,-90,'h',1.2)+J(54,40,-90,'f',1.2)+A(44,40,14,40,'f',{w:1.8});},
+"MERGE":function(){return R(60,40,20,'a',{d:'3 3'})+J(54,44,60,'f',1.1)+J(66,36,-120,'h',1.1)+A(14,64,38,52,'f')+A(106,16,82,28,'h');},
+"BANZAI":function(){return J(16,40,90,'f',1.2)+MSL(42,40,90,'f')+A(54,40,74,40,'f',{d:'3 3'})+A(26,48,84,48,'f',{w:2})+J(100,44,-90,'h',1.2);},
+"ANCHOR(ED)":function(){return '<ellipse cx="60" cy="40" rx="40" ry="18" style="fill:none;stroke:var(--fr);stroke-width:1.6;stroke-dasharray:4 3"/>'+D(60,40,3.5,'a')+J(100,40,0,'f',1.1)+J(20,40,180,'f',1.1);},
+"SPIN":function(){return L(10,56,40,56,'f',{w:1.6})+P('M40,56 C60,56 66,30 50,28 C34,26 40,56 70,56','f',{w:1.6})+A(70,56,108,56,'f',{w:1.6})+CLOCK(96,26,'n');},
+"FLOW":function(){return J(28,22,60,'f',1)+J(28,44,60,'f',1)+J(46,62,60,'f',1)+A(40,26,84,50,'a',{w:1.6})+A(40,48,84,72,'a',{w:1.6})+A(58,66,74,76,'a',{w:1.2});},
+"RETROGRADE":function(){return J(96,40,-90,'h',1.2)+J(56,40,-90,'f',1.2)+A(44,46,14,46,'f',{w:2})+L(70,36,82,36,'f',{d:'2 2'});},
+"SLIDE":function(){return '<ellipse cx="36" cy="40" rx="22" ry="12" style="fill:none;stroke:var(--fr);stroke-width:1.4;stroke-dasharray:3 3"/>'+J(100,40,-90,'h',1)+A(36,54,36,72,'f',{w:2})+Q(48,70,74,72,64,52,'m',{d:'2 3'});},
+"SET":function(){return P('M20,60 A40,40 0 0 1 100,60','m',{w:2})+L(60,60,84,32,'a',{w:2.6})+D(60,60,4,'n')+T(60,76,'steady','m',8,500);},
+"ANGELS":function(){return ALT(30)+J(64,30,90,'f',1.4)+L(34,30,52,30,'f',{d:'2 2'})+T(98,34,'k ft','m',9,500);},
+"ELEVATOR":function(){return ALT(30)+J(64,58,90,'f',1.2)+Q(74,58,92,58,90,26,'f',{w:2})+L(34,22,110,22,'a',{d:'3 3',w:1});},
+"LEVEL":function(){return L(10,40,110,40,'a',{d:'4 3'})+J(36,40,90,'f',1.3)+J(86,40,-90,'u',1.3);},
+/* EW & SENSORS */
+"NAILS":function(){return SCOPE(48,40,28)+L(48,40,70,22,'u',{d:'2 3',w:1.6})+T(96,44,'search','m',8,500);},
+"SPIKE":function(){return SCOPE(48,40,28)+L(48,40,74,26,'h',{w:3})+T(96,44,'track','m',8,500);},
+"BUZZER":function(){return RADIO(30,46,'n')+ZIG(44,38,104,38,'h')+ZIG(44,52,104,52,'h');},
+"CHATTERMARK":function(){return RADIO(20,46,'n')+ZIG(32,30,58,30,'h')+NO(46,30,'n')+A(36,52,82,52,'a',{w:2})+RADIO(98,46,'f');},
+"CANYON":function(){return J(20,30,90,'f',1.3)+ZIG(34,32,82,52,'f')+GROUND(68)+DISH(94,56,'h');},
+"BUCKET":function(){return SCOPE(46,40,28)+D(56,30,3,'h')+R(36,50,3,'h',{d:'1 1.5'})+R(60,52,3,'h',{d:'1 1.5'})+R(30,30,3,'h',{d:'1 1.5'})+ZIG(84,20,106,40,'h')+T(96,62,'C2','m',9);},
+"EMPTY":function(){return SCOPE(48,40,28,true)+P('M84,40 h26','m',{w:1.6})+T(97,30,'0','m',12);},
+"AWAKE":function(){return GROUND(66)+DISH(36,52,'h')+WAVES(36,46,'h',-90,3)+EYE(92,30,'n');},
+"DAISY":function(){return P('M14,30 q6,-12 12,0 t12,0 t12,0','m',{w:3})+P('M14,30 q6,-12 12,0 t12,0 t12,0','h',{w:1.4})+OK(84,30,'g')+T(60,64,'within limits','m',8,500);},
+"ROTATOR":function(){return GROUND(66)+DISH(60,50,'h')+P('M44,30 A18,8 0 1 1 76,30','a',{w:1.6})+ah(44,30,Math.PI*0.6,'a');},
+"SUNRISE":function(){return SCOPE(40,44,24,true)+P('M76,56 A16,16 0 0 1 108,56','a',{fill:'a'})+L(70,56,114,56,'m')+L(92,32,92,26,'a')+L(80,36,76,32,'a')+L(104,36,108,32,'a');},
+"CLUSTER":function(){return P('M10,72 Q60,-20 110,72','m',{d:'2 3',w:1})+R(64,22,13,'h',{d:'2 2'})+D(58,18,2.4,'h')+D(66,16,2.4,'h')+D(70,24,2.4,'h')+D(60,27,2.4,'h')+D(66,28,2,'h');},
+"DUST":function(){return P('M10,72 Q50,0 70,18','m',{d:'2 3',w:1})+'<g style="fill:var(--mute)"><rect x="76" y="14" width="3" height="2"/><rect x="84" y="22" width="2" height="3"/><rect x="80" y="30" width="3" height="2"/><rect x="92" y="18" width="2" height="2"/><rect x="88" y="34" width="3" height="2"/><rect x="74" y="26" width="2" height="2"/></g>'+NO(100,56,'m');},
+"LOOK-THROUGH":function(){return SAT(34,24,'n')+L(34,32,34,56,'a',{d:'2 3'})+RECT(70,24,6,22,'n',{fill:'n',rx:1})+RECT(82,24,6,22,'n',{fill:'n',rx:1})+OK(80,62,'g');},
+/* ADMIN, FUEL & COMMS */
+"GREEN":function(){return LIGHTS(0)+A(82,18,108,18,'g',{w:1.8});},
+"YELLOW":function(){return LIGHTS(1)+DROP(96,40,'u');},
+"RED":function(){return LIGHTS(2)+DROP(96,40,'h')+NO(96,64,'h');},
+"JOKER":function(){return DROP(40,40,'a')+RECT(70,10,14,60,'m',{rx:2})+RECT(71,48,12,21,'a',{fill:'a',rx:1})+L(64,48,90,48,'n',{w:2})+L(64,60,90,60,'m',{d:'2 2'});},
+"PLAYTIME":function(){return CLOCK(40,40,'n')+T(40,64,'h+mm','m',8,500)+DROP(84,40,'a',true);},
+"WILCO":function(){return RADIO(22,52,'n')+BUB(38,20,40,22,'g',OK(58,31,'g'))+A(84,44,104,44,'f',{w:2});},
+"ROLEX":function(){return TLINE(52,5)+D(35,52,4,'m')+A(38,40,82,40,'a',{w:2})+D(85,52,4,'a')+CLOCK(60,18,'n');},
+"PUSH(ING)":function(){return RADIO(24,46,'n')+A(38,40,78,40,'a',{w:2})+RECT(82,30,28,20,'a',{rx:3})+T(96,44,'CH','a',9);},
+"FEET (WET/DRY)":function(){return P('M60,6 Q52,20 62,32 Q70,46 58,58 Q52,68 60,76','n',{w:1.6})+P('M14,30 q4,-4 8,0 t8,0 M14,44 q4,-4 8,0 t8,0 M14,58 q4,-4 8,0 t8,0','f',{w:1.2})+J(66,40,90,'f',1.2)+A(78,40,104,40,'f');},
+"FENCE (IN/OUT)":function(){return P('M60,6 V74 M54,14 H66 M54,30 H66 M54,46 H66 M54,62 H66','n',{w:1.6})+J(28,40,90,'f',1.2)+A(40,40,86,40,'f',{w:1.8})+RECT(92,30,20,20,'a',{rx:3})+L(102,46,106,34,'a',{w:2.4});},
+"WORDS":function(){return J(20,56,0,'f',1.1)+BUB(32,10,56,30,'n',L(40,18,80,18,'m',{w:1.4})+L(40,25,76,25,'m',{w:1.4})+L(40,32,70,32,'m',{w:1.4}))+RADIO(100,56,'n');},
+"STATUS":function(){return RADIO(20,52,'n')+BUB(32,14,26,18,'n',T(45,28,'?','n',12))+J(90,46,0,'f',1.4)+T(90,72,'task / state','m',8,500);},
+"CHICK(S)":function(){return J(60,40,90,'f',2)+J(34,20,90,'f',.9)+J(34,60,90,'f',.9)+J(88,20,90,'f',.9)+J(88,60,90,'f',.9);},
+"HANDSHAKE":function(){return RECT(10,28,26,24,'n',{rx:3})+RECT(84,28,26,24,'n',{rx:3})+'<ellipse cx="52" cy="40" rx="10" ry="6" style="fill:none;stroke:var(--acc);stroke-width:2.4"/><ellipse cx="68" cy="40" rx="10" ry="6" style="fill:none;stroke:var(--acc);stroke-width:2.4"/>'+L(36,40,42,40,'a')+L(78,40,84,40,'a');},
+"POPCORN":function(){return GROUND(68)+LZ(40,60,'m')+HELO(64,30,'f')+A(64,48,64,40,'f')+A(82,30,106,22,'f',{d:'3 3'})+T(36,26,'+2','f',11);}
+};
+return {G:G,svg:svg,render:function(t){var f=G[t];return f?svg(f(),'Visual cue'):'';}};
+})();
+if(typeof module!=='undefined')module.exports=V;
+
+</script>
+<script>
+const D = {"clusters":["SIGHT & PICTURE","ID & IFF","STOP & GO CALLS","WEAPONS & FIRES","MANEUVER & ALTITUDE","EW & SENSORS","ADMIN, FUEL & COMMS"],"terms":[{"t":"TALLY","c":0,"def":"Sighting of a TARGET, non-friendly aircraft, or enemy position; opposite of NO JOY.","hook":"Tally-ho! — eyes on the fox. Enemy in sight.","plain":"A pilot has eyes on the enemy aircraft or the target."},{"t":"NO JOY","c":0,"def":"Aircrew does NOT have visual contact with the target/bandit; opposite of TALLY (also: no radio contact made).","hook":"No joy on the hunt — you can't see the bandit.","plain":"A pilot looked for the enemy or target and cannot see it."},{"t":"VISUAL","c":0,"def":"Sighting of a FRIENDLY aircraft, ground position, or ship; opposite of BLIND.","hook":"Visual = I see my FRIEND. Save TALLY for the enemy.","plain":"A pilot can see a friendly: the wingman, a friendly position, or a ship."},{"t":"BLIND","c":0,"def":"No visual contact with FRIENDLY aircraft, ship, or position; opposite of VISUAL.","x":1},{"t":"CONTACT(S)","c":0,"def":"Sensor info at stated position / sighting of a reference point acknowledged / a radar return within a GROUP.","hook":"The sensor made contact — data at a position, not eyes.","plain":"A sensor shows something at that spot. Data on a scope, not eyes."},{"t":"CAPTURED","c":0,"def":"[A/S] The object has been acquired and is being tracked by the sensor.","hook":"The sensor captured it — in custody and being tracked.","plain":"The targeting pod has the object and is tracking it."},{"t":"PICTURE","c":0,"def":"Request for information pertinent to the mission, in digital bullseye format unless briefed otherwise.","hook":"Paint me the picture — the SA request, bullseye format.","plain":"A fighter asks the controller to describe the whole air situation."},{"t":"NEW PICTURE","c":0,"def":"Tactical PICTURE has changed; supersedes all previous calls and reestablishes the picture for all players.","hook":"Tear down the old picture and hang a new one — everything before is void.","plain":"So much changed that the controller throws out the old calls and starts over."},{"t":"BOGEY DOPE","c":0,"def":"[A/A][S/A] Request for information on the indicated or closest GROUP, answered in BRAA format.","hook":"Give me the dope (the info) on the bogey — answered in BRAA.","plain":"A fighter asks the controller for bearing and range to the nearest group."},{"t":"BRAA","c":0,"def":"Target bearing, range, altitude, and aspect given relative to a specified friendly aircraft.","hook":"Bearing, Range, Altitude, Aspect — read off YOUR nose, not the bullseye.","plain":"Where the contact is, measured from one friendly jet's own nose."},{"t":"BULLSEYE","c":0,"def":"Established reference point; positions given as magnetic bearing and range (NM) from it.","hook":"Everyone measures from the same bullseye on the dartboard.","plain":"Everyone gives positions from one shared reference point."},{"t":"POSIT","c":0,"def":"Request for FRIENDLY position; answered via geographic landmark or a common reference point.","hook":"Say your position — POSIT.","plain":"Someone asks where a friendly is right now."},{"t":"SAM","c":0,"def":"[direction] Visual acquisition of a SAM in flight or a SAM launch; should include position.","hook":"SAM! — you SEE the missile in the air. A sighting, not an RWR cue.","plain":"A pilot sees a surface-to-air missile launch or in flight."},{"t":"GROUP","c":0,"def":"[A/A] Any number of air contacts within 3 NM in azimuth and range of each other (1 NM surface, AIR-MAR).","hook":"Contacts huddled within 3 NM form one group.","plain":"Air contacts close together get called as one unit."},{"t":"HEAVY","c":0,"def":"[A/A] A GROUP known to contain three or more contacts.","hook":"That group is heavy — three or more aboard.","plain":"A group that holds three or more aircraft."},{"t":"LEAD-TRAIL","c":0,"def":"Inner-GROUP formation of two contacts separated in RANGE.","hook":"One leads, one trails — an inner-group split in range.","plain":"Two contacts inside one group, one behind the other."},{"t":"HOLDING HANDS","c":0,"def":"[A/A] Aircraft in visual formation.","hook":"Flying close enough to hold hands — visual formation.","plain":"Friendly jets flying together in visual formation."},{"t":"FLANK","c":0,"def":"[A/A] Contact aspect stabilized 110-149 deg angle from tail (31-70 deg from nose).","hook":"He's showing you his flank — 110-149 degrees off the tail.","plain":"The contact is angled across your nose, showing you its side."},{"t":"BOGEY","c":1,"def":"A contact whose identity is unknown.","hook":"The bogeyman: you don't know what it is yet.","plain":"Something is on radar and nobody knows yet what it is."},{"t":"BANDIT","c":1,"def":"Positively identified as enemy IAW theater ID criteria — does NOT imply direction or authority to engage.","x":1},{"t":"HOSTILE","c":1,"def":"A contact identified as enemy upon which clearance to fire is authorized IAW theater ROE.","hook":"HOSTILE is the word that opens fire — cleared to engage per ROE.","plain":"Identified as enemy, and the ROE says you can shoot it."},{"t":"STRANGER","c":1,"def":"[A/A] Unidentified traffic that is NOT a participant in the action in progress.","hook":"A stranger in the neighborhood — traffic that isn't in the game.","plain":"Unknown traffic that is not part of your fight."},{"t":"CHAMELEON","c":1,"def":"[EW][SO] EW target on a known frequency showing changed external parameters; no engagement authority implied.","hook":"Same lizard, new colors — known frequency, changed parameters.","plain":"An emitter on a known frequency now looks different than expected."},{"t":"INVESTIGATE","c":1,"def":"Verify specified ROE, PID, CDE and/or coordination-of-forces elements on the referenced target or track.","hook":"Detective work first — verify ROE, PID, CDE before anyone shoots.","plain":"Go confirm the ROE, ID, and collateral checks on that track before anyone shoots."},{"t":"SQUAWK","c":1,"def":"[mode, code] Operate IFF/SIF as indicated, or IFF/SIF is operating as indicated.","hook":"Make the parrot squawk the assigned code.","plain":"The controller tells you which IFF mode and code to set, or you report what you are set to."},{"t":"PARROT","c":1,"def":"IFF selective identification feature transponder.","hook":"The parrot repeats whatever it's told — the IFF transponder.","plain":"The IFF transponder box itself."},{"t":"SWEET","c":1,"def":"Valid IFF/SIF check response; data-link receipt confirmed; equipment operating well (cancels SICK, BENT).","hook":"Checks sweet — valid IFF, good link, working gear.","plain":"The check came back good. The system works."},{"t":"SOUR","c":1,"def":"Invalid or no response to an IFF/SIF check; or data-link net-entry problems. Opposite of SWEET.","x":1},{"t":"BENT","c":1,"def":"[system] BENT: the indicated system is inoperative; cancelled by SWEET.","hook":"Bent gear is broken gear.","plain":"That system is broken."},{"t":"KNOCK-IT-OFF","c":2,"def":"Cease ALL air combat maneuvers, attacks, activities, or exercises (training use only).","hook":"The referee stops the WHOLE fight — everyone, training-wide.","plain":"Training stops for everyone, right now."},{"t":"TERMINATE","c":2,"def":"[A/A] In training, cease the LOCAL engagement without affecting the overall exercise.","hook":"Terminate THIS engagement only — the exercise lives on.","plain":"Just this one training fight ends. The rest of the exercise keeps going."},{"t":"ABORT","c":2,"def":"Cease action or terminate the attack prior to weapons release, event, or mission.","hook":"Abort the launch — stop BEFORE the weapon leaves.","plain":"Stop the attack before the weapon comes off the jet."},{"t":"CEASE","c":2,"def":"CEASE [activity]: discontinue the stated activity (e.g., CEASE BUZZER, LASER, SPARKLE).","hook":"CEASE [activity] — a stop-verb that needs an object.","plain":"Stop doing the named activity, such as jamming or lasing."},{"t":"SCRAM","c":2,"def":"[direction] Withdraw for survival (asset in danger) / cease intercept and evade / clear civil traffic from an area.","hook":"SCRAM! — run for survival, and nobody is covering your back.","plain":"Get out now to survive, or clear out of an area."},{"t":"BREAK AWAY","c":2,"def":"Tanker/receiver call: immediate vertical and nose-to-tail separation between tanker and receiver required.","hook":"The tanker screaming GET AWAY — down and back, immediately.","plain":"The receiver drops down and back from the tanker immediately."},{"t":"COMMIT","c":2,"def":"[A/A] Intercept the group(s) of interest; set briefed intercept geometry.","hook":"Commit to the fight — you own the intercept from here.","plain":"Fighters turn in and start the intercept on that group."},{"t":"CHERRY","c":3,"def":"LZ/DZ has enemy activity ABOVE the prebriefed risk tolerance; opposite of and cancels ICE.","hook":"Cherry red = HOT landing zone.","plain":"The landing zone is too hot. Enemy activity is above the briefed limit."},{"t":"ICE","c":3,"def":"LZ/DZ enemy activity BELOW the prebriefed risk level; opposite of and cancels CHERRY.","hook":"Ice-cold LZ — threat below the briefed tolerance.","plain":"The landing zone is quiet enough to come in."},{"t":"CLEARED HOT","c":3,"def":"JTAC/FAC(A) Type 1 and 2 CAS terminal control: weapons release clearance on a specific target.","hook":"The JTAC opens the oven — Type 1/2 CAS release.","plain":"The JTAC gives release clearance on a CAS target."},{"t":"CONTINUE DRY","c":3,"def":"[A/S] Continue the pass; ordnance release NOT authorized (simulated deliveries may be performed).","hook":"Keep flying the pass, keep the pylons dry.","plain":"Keep flying the attack pass, but do not release anything."},{"t":"SMACK","c":3,"def":"Clearance to employ ordnance/fires on surface target coordinates — ROE, PID, CDE etc. satisfied. NOT for CAS.","hook":"Smack the surface target — the non-CAS clearance with every gate satisfied.","plain":"Cleared to put fires on those coordinates. Used outside CAS."},{"t":"TARGET","c":3,"def":"Assignment of targeting responsibility; or ROE/PID/coordination satisfied on the referenced target or track.","hook":"You own that target — sorting responsibility, or the fires gates are met.","plain":"This contact is yours to handle, or its ROE and ID checks are done."},{"t":"LASER ON","c":3,"def":"[A/S][S/S] Directive call to start lasing.","hook":"The command: light it.","plain":"The JTAC tells the designator to start lasing."},{"t":"LASING","c":3,"def":"[A/S][S/S] The speaker is firing the laser (in response to LASER ON).","hook":"The reply: light's on.","plain":"The designator answers that the laser is firing now."},{"t":"SPARKLE","c":3,"def":"Mark or marking the target with an IR pointer; or platform is IR-pointer capable.","hook":"Sparkle it with the IR pointer — glitter for the goggles, not laser guidance.","plain":"Someone marks the target with an IR pointer, or says they can."},{"t":"FOX (1/2/3)","c":3,"def":"A/A missile launch: ONE semi-active radar, TWO infrared, THREE active radar.","hook":"Fox in the henhouse: 1 semi-active, 2 heat, 3 active.","plain":"A friendly just launched an air-to-air missile."},{"t":"MAGNUM","c":3,"def":"[A/S][EW] Launch of a FRIENDLY antiradiation missile (with system and location).","hook":"The .44 Magnum aimed at the radar — an ARM is in the air.","plain":"A friendly just launched an anti-radiation missile at a radar."},{"t":"PIG(S)","c":3,"def":"[A/S] FRIENDLY glide weapon(s) — standoff weapon, guided bomb unit, small diameter bomb.","hook":"Pigs CAN fly — they glide. Glide weapons away.","plain":"Friendly glide bombs are in the air."},{"t":"AWAY","c":3,"def":"[number/type] AWAY: release or launch of the specified weapon (e.g., 2 PIGS AWAY, BIRDS AWAY).","hook":"Bombs away — it's off the jet.","plain":"The named weapon just came off the jet."},{"t":"FUMBLE","c":3,"def":"[A/A][A/S] Observed weapon missing the target or impacting without desired weapons effects.","hook":"Fumbled at the goal line — weapon missed or had no effect.","plain":"The weapon missed or did not do the job."},{"t":"SPLASH","c":3,"def":"Weapon hit observed with desired effects; [S/A][S/S] also: 5 seconds to estimated impact.","x":1},{"t":"GRANDSLAM","c":3,"def":"All HOSTILE contacts of a designated track (or mission tasking) are destroyed.","hook":"A grand slam clears the bases — every tasked hostile is down.","plain":"Every tasked hostile is down."},{"t":"MILLER TIME","c":3,"def":"[A/S] Completion of A/S ordnance delivery; generally by the last striker with the precoordinated egress plan.","hook":"Bombs delivered? It's Miller Time — last striker calls it and everyone egresses.","plain":"The last striker has finished dropping and the package heads out."},{"t":"REMINGTON","c":3,"def":"Out of / unable to employ remaining A/A ordnance (gun excluded); [S/A][MAR] only gun or self-protection ammo left.","hook":"The Remington rack is empty — missiles gone, gun maybe left.","plain":"Out of air-to-air missiles. Only the gun may be left."},{"t":"WINCHESTER","c":3,"def":"No ordnance remaining — nothing left at all.","x":1},{"t":"LEAKER","c":3,"def":"[A/A][S/A] An airborne threat has passed through a defensive layer; include amplifying information.","hook":"One leaked through the wall — an airborne threat past the defensive layer.","plain":"A threat got through the defensive layer."},{"t":"SQUIRTER","c":3,"def":"[A/S][S/S] A ground-borne object of interest departing the objective area.","hook":"A squirter squirts OUT of the objective — the ground runner.","plain":"Something on the ground is leaving the target area."},{"t":"SHOPPING","c":3,"def":"[A/S] An aircraft request to the FAC, JTAC, or C2 platform for a target or task.","hook":"Window-shopping for targets — ordnance to spend, no tasking yet.","plain":"A jet has weapons and no tasking, and asks the JTAC for a target."},{"t":"BAD MAP","c":3,"def":"[A/S] Displayed radar map unusable: terrain shadows obstruct the area, or image quality prevents target ID.","hook":"The map is bad — reshoot the radar picture from a new angle.","plain":"The radar map is useless: shadowed or too poor to find the target."},{"t":"SCAN","c":3,"def":"[A/S] Search the sector indicated and report any CONTACTS.","hook":"Scan the sector and report what you find.","plain":"Search that sector and report what you find."},{"t":"BREAK","c":4,"def":"[direction] Perform an immediate maximum-performance turn (default 180 degrees).","hook":"Slam the brakes and BREAK — max-performance, right now.","plain":"A hard, max-performance turn, usually defensive, right now."},{"t":"CHECK","c":4,"def":"[number, left/right] Turn the stated degrees left or right and maintain the new heading.","hook":"Check your heading a few degrees — gentle, nothing like a BREAK.","plain":"Turn a set number of degrees and hold the new heading."},{"t":"HOOK","c":4,"def":"[A/A][direction] Perform an in-place 180-degree turn; or data-link directive to cue sensors to a described point.","hook":"Hook a U-turn in place — or hook the sensor onto a point.","plain":"Turn around in place, or cue sensors to a point."},{"t":"EXTENDING","c":4,"def":"[A/A][A/S] Short-term maneuver to gain energy, distance, or separation with intent to REENGAGE.","hook":"Stretching the rubber band — gain energy and distance, then snap back in.","plain":"Running out to gain energy or room, planning to come back in."},{"t":"BUGOUT","c":4,"def":"Separation from the engagement with NO intent to reengage or return.","x":1},{"t":"COLD","c":4,"def":"CAP turn away from threat / geometry passing behind target / aspect 0-20 deg from tail / area not expecting fire.","hook":"Cold = away from the action, whichever meaning applies.","plain":"Pointed away from the threat or the action."},{"t":"HOT","c":4,"def":"Aspect 150-180 deg off tail / CAP turn toward threat / geometry passing in front / area expects fire / ordnance intended.","x":1},{"t":"MERGE","c":4,"def":"[A/A] FRIENDLIES and targets have arrived in the visual arena.","hook":"Traffic merges into one lane — BVR is over, everyone's in the visual arena.","plain":"Friendlies and bandits are now in the visual fight."},{"t":"BANZAI","c":4,"def":"[A/A] Execute launch-and-decide tactics with intent to maneuver into the visual arena.","hook":"Banzai charge: launch the missile, then run in for the knife fight.","plain":"Shoot first, then press on into the visual fight."},{"t":"ANCHOR(ED)","c":4,"def":"Orbit about a specific point / tanker refueling track; ANCHORED = turning engagement at a location.","hook":"Drop anchor = stay over one spot; a turning fight anchors you to one piece of sky.","plain":"Orbit a fixed point or tanker track, or a turning fight stuck at one spot."},{"t":"SPIN","c":4,"def":"[A/A] Execute(ing) a timing or spacing maneuver.","hook":"Spin a lap — buy timing or spacing without leaving the fight.","plain":"A loop or delay to fix timing or spacing."},{"t":"FLOW","c":4,"def":"[direction/heading] Maneuver in the stated direction or heading; can be used to begin cold operations.","hook":"The whole formation flows that direction like a river.","plain":"Move the force in that direction."},{"t":"RETROGRADE","c":4,"def":"Withdraw(ing) while executing defensive procedures in response to a threat.","hook":"Retro = backwards — a fighting withdrawal by the numbers.","plain":"A fighting withdrawal from a threat."},{"t":"SLIDE","c":4,"def":"Continue mission while flowing off station in response to a perceived threat (implies intent to RESET); or laterally reposition a helicopter.","hook":"Slide off station under threat — with every intent to slide back (RESET).","plain":"Shift off station away from a threat, planning to reset and come back."},{"t":"SET","c":4,"def":"Set (or have set) a speed; sensor no longer slewing, awaiting updates; overwatch aircraft in position.","hook":"Set the speed, sensor set steady, or overwatch set in position.","plain":"Speed is dialed in, the sensor is steady, or overwatch is in position."},{"t":"ANGELS","c":4,"def":"Height of a FRIENDLY aircraft in thousands of feet MSL.","hook":"Angels live up high — friendly height in thousands.","plain":"A friendly's altitude, in thousands of feet."},{"t":"ELEVATOR","c":4,"def":"Directive or request to change altitude to the specified altitude in thousands of feet MSL.","hook":"Take the elevator to the directed floor — thousands of feet MSL.","plain":"Climb or descend to the stated altitude."},{"t":"LEVEL","c":4,"def":"Contact is co-altitude (inter-flight call), or briefed altitude has been reached.","hook":"Level with me — co-altitude, or the briefed altitude is reached.","plain":"Same altitude as the contact, or you have reached your altitude."},{"t":"NAILS","c":5,"def":"[A/A] RWR indication of airborne interceptor radar in SEARCH (also 2.75-inch flechette rockets, A/S).","hook":"RWR scratching like nails on a chalkboard — search radar only, no track.","plain":"The warning receiver shows a fighter radar searching."},{"t":"SPIKE","c":5,"def":"[direction] RWR indication of an air-interceptor threat in TRACK or LAUNCH.","hook":"A spike through your RWR — that radar is TRACKING you.","plain":"The warning receiver shows a fighter radar tracking or launching on you."},{"t":"MUD","c":5,"def":"RWR indication of a surface threat in TRACK mode (type with direction/range).","x":1},{"t":"SINGER","c":5,"def":"RWR indication of a SAM LAUNCH.","x":1},{"t":"BUZZER","c":5,"def":"[EW] Electromagnetic communications jamming (NATO term: CHATTER).","hook":"A buzzer drowns out the room — comms jammed.","plain":"Radio communications are being jammed."},{"t":"CHATTERMARK","c":5,"def":"Begin briefed communication procedures to counter communications jamming (default: radio).","hook":"Counter the chatter — switch to the briefed anti-jam comm plan.","plain":"Switch to the briefed anti-jam comm plan."},{"t":"CANYON","c":5,"def":"[EW] Employ electromagnetic jamming on the indicated radar frequency, or execute the EA plan.","hook":"Shout into the canyon and flood it with echo — the order to jam that frequency.","plain":"Jam that radar frequency now, or run the jamming plan."},{"t":"BUCKET","c":5,"def":"[EW] C2 is experiencing radar electromagnetic deceptive jamming in a specified geographic area.","hook":"C2's radar picture poured into a bucket of lies — deceptive jamming on C2.","plain":"C2's radar is being fooled by deceptive jamming in an area."},{"t":"EMPTY","c":5,"def":"[EW] No emitters of interest detected.","hook":"The spectrum shelf is empty — nothing of interest radiating.","plain":"No emitters of interest found on the search."},{"t":"AWAKE","c":5,"def":"[EW] Land/surface emitter activity detected via communications intelligence; opposite of ASLEEP.","hook":"The enemy emitter woke up and started talking — and you heard it.","plain":"Intelligence hears ground or surface emitters active."},{"t":"ASLEEP","c":5,"def":"No longer detecting land or surface emitter activity via communications intelligence. Opposite of AWAKE.","x":1},{"t":"DAISY","c":5,"def":"[SO][EW] Notification that signal characteristics are within validated parameters.","hook":"Fresh as a daisy — the signal checks within parameters.","plain":"The signal looks the way it should."},{"t":"ROTATOR","c":5,"def":"[EW] Moving-target-indicator returns that signify a high probability of a rotating antenna.","hook":"The MTI sees something spinning — a rotating antenna.","plain":"Radar returns suggest a spinning antenna."},{"t":"SUNRISE","c":5,"def":"[A/A][S/A] C2 sensors are available; opposite of MIDNIGHT.","hook":"The sun is up — C2 sensors can see again.","plain":"C2's sensors are back up."},{"t":"MIDNIGHT","c":5,"def":"C2 sensors unavailable due to degradation. Opposite of SUNRISE.","x":1},{"t":"CLUSTER","c":5,"def":"[S/A] Multiple ballistic missile objects within a small volume of space.","hook":"A cluster of missile objects packed into one small piece of sky.","plain":"Several ballistic missile objects close together."},{"t":"DUST","c":5,"def":"[S/A] Launch or post-intercept debris from a ballistic missile; location given in digital BULLSEYE format.","hook":"After the intercept, only dust — ballistic debris, not a track.","plain":"Ballistic missile debris, not a new threat."},{"t":"LOOK-THROUGH","c":5,"def":"[SO] Disengage to ensure parameters are still current.","hook":"Look through your assumptions — step back and re-validate (space ops).","plain":"Pause the effect and re-check that parameters are still current."},{"t":"GREEN","c":6,"def":"1) [direction] Direction of no known enemy threats; 2) weapon/fuel state allows continued mission execution.","hook":"Green light — a threat-free direction, or weapons/fuel good to continue.","plain":"A threat-free direction, or enough fuel and weapons to keep going."},{"t":"YELLOW","c":6,"def":"Aircraft weapon and/or fuel status APPROACHING a level insufficient to continue the mission.","hook":"The yellow caution light — approaching insufficient, plan your exit.","plain":"Getting close to not enough fuel or weapons."},{"t":"RED","c":6,"def":"Aircraft weapon and/or fuel state INSUFFICIENT to continue execution of the mission.","hook":"Redline — cannot continue the mission.","plain":"Not enough fuel or weapons to continue the mission."},{"t":"JOKER","c":6,"def":"Fuel state ABOVE BINGO at which separation, BUGOUT, or event termination should begin.","hook":"The Joker shows up before the punchline — the fuel warning ABOVE BINGO.","plain":"The fuel point where you start wrapping up, set above recovery fuel."},{"t":"BINGO","c":6,"def":"Prebriefed fuel state needed for recovery.","x":1},{"t":"PLAYTIME","c":6,"def":"Amount of time aircraft can remain on station, given in hours plus minutes.","hook":"How long can you stay out and play — hours plus minutes on station.","plain":"How long you can stay on station."},{"t":"WILCO","c":6,"def":"Will comply with received instructions.","hook":"WILL COmply — received AND doing it. ROGER only means received.","plain":"Got it, and I will do it."},{"t":"ROGER","c":6,"def":"Radio transmission received — does NOT indicate compliance or reaction.","x":1},{"t":"ROLEX","c":6,"def":"Timeline adjustment in minutes for the entire mission from the original planned time; always LATER.","hook":"Roll the Rolex forward — the whole timeline slips LATER.","plain":"The whole mission timeline slips later."},{"t":"LEEROY","c":6,"def":"Mission timeline adjustment in minutes, always EARLIER, from original planned time. Opposite of ROLEX.","x":1},{"t":"PUSH(ING)","c":6,"def":"PUSH [channel]: switch to designated frequency, no acknowledgment; PUSHING: departing the designated point.","hook":"Push to the new frequency; pushing off from the point.","plain":"Change to that frequency without answering, or you are leaving the point now."},{"t":"FEET (WET/DRY)","c":6,"def":"Flying over water (WET) or over land (DRY).","hook":"Feet wet over water, feet dry over land — the coastline call.","plain":"Crossing the coastline, now over water or over land."},{"t":"FENCE (IN/OUT)","c":6,"def":"Set cockpit switches as appropriate before entering (IN) or exiting (OUT) the combat area.","hook":"Hopping the fence into bad-guy country — set your combat switches.","plain":"Set combat switches when crossing into or out of the fight area."},{"t":"WORDS","c":6,"def":"Directive calls or requests for further information/directives pertinent to the mission or operating area.","hook":"Any words for us? — C2-pushed mission info per the SPINS.","plain":"Any new instructions or mission info for me?"},{"t":"STATUS","c":6,"def":"Request for an individual's tactical situation, or amplifying info on current task or aircraft state.","hook":"Say status — the open-ended state check.","plain":"What is your situation right now?"},{"t":"CHICK(S)","c":6,"def":"Term used to denote FRIENDLY aircraft on the safe flight or mission.","hook":"Chicks under the wing — friendlies on the safe flight.","plain":"Friendly aircraft on the mission."},{"t":"HANDSHAKE","c":6,"def":"Link 16 air-control NPG initiation with controlled aircraft, or [A/S] video data link established.","hook":"Two systems shake hands — the link is up.","plain":"The data link is connected."},{"t":"POPCORN","c":6,"def":"CSAR aircraft departing the LZ, usually followed by number recovered (e.g., POPCORN PLUS 2).","hook":"Popcorn's done, movie's over — the rescue bird lifts with survivors.","plain":"The rescue aircraft is lifting out of the LZ with survivors aboard."}],"groups":[[["TALLY","NO JOY"],["VISUAL","x:BLIND"],["CONTACT(S)","CAPTURED"],["PICTURE","NEW PICTURE"],["BOGEY DOPE","POSIT"],["BRAA","BULLSEYE"],["SAM"],["GROUP","HEAVY"],["LEAD-TRAIL","HOLDING HANDS"],["FLANK"]],[["BOGEY","STRANGER"],["HOSTILE","x:BANDIT"],["CHAMELEON","INVESTIGATE"],["SQUAWK","PARROT"],["SWEET","x:SOUR","BENT"]],[["KNOCK-IT-OFF","TERMINATE"],["ABORT","CEASE"],["SCRAM","BREAK AWAY"],["COMMIT"]],[["CHERRY","ICE"],["CLEARED HOT","CONTINUE DRY"],["SMACK","TARGET"],["LASER ON","LASING","SPARKLE"],["FOX (1/2/3)","MAGNUM","PIG(S)"],["AWAY"],["FUMBLE","x:SPLASH"],["GRANDSLAM","MILLER TIME"],["REMINGTON","x:WINCHESTER"],["LEAKER","SQUIRTER"],["SHOPPING","SCAN"],["BAD MAP"]],[["BREAK","CHECK","HOOK"],["EXTENDING","x:BUGOUT"],["COLD","x:HOT"],["MERGE","BANZAI"],["ANCHOR(ED)","SPIN"],["FLOW","RETROGRADE","SLIDE"],["SET"],["ANGELS","ELEVATOR","LEVEL"]],[["NAILS","SPIKE","x:MUD","x:SINGER"],["BUZZER","CHATTERMARK"],["CANYON","BUCKET"],["EMPTY","AWAKE","x:ASLEEP"],["DAISY","ROTATOR"],["SUNRISE","x:MIDNIGHT"],["CLUSTER","DUST"],["LOOK-THROUGH"]],[["GREEN","YELLOW","RED"],["JOKER","x:BINGO","PLAYTIME"],["WILCO","x:ROGER"],["ROLEX","x:LEEROY"],["PUSH(ING)"],["FEET (WET/DRY)","FENCE (IN/OUT)"],["WORDS","STATUS"],["CHICK(S)","HANDSHAKE"],["POPCORN"]]],"scen":[{"id":"S001","q":"Mid-BFM setup, a civilian aircraft blunders into the training airspace and safety of flight is at risk. The call that stops ALL maneuvers, attacks, and exercise activity is:","options":["TERMINATE","KNOCK-IT-OFF","ABORT","SCRAM"],"answer":1,"why":"KNOCK-IT-OFF ceases everything (training use only). TERMINATE ends one local engagement; ABORT kills an attack pre-release."},{"id":"S002","q":"Your 1v1 is complete but the larger exercise continues for other players. You call:","options":["KNOCK-IT-OFF","GRANDSLAM","TERMINATE","MILLER TIME"],"answer":2,"why":"TERMINATE = cease the local engagement without affecting the overall exercise."},{"id":"S003","q":"Lead asks if you see the threat fighter at right 2 o'clock. You see it. Correct call:","options":["VISUAL","CONTACT","TALLY","SWEET"],"answer":2,"why":"TALLY = sighting of a target/enemy. VISUAL is friendlies only; CONTACT is sensor/reference-point language."},{"id":"S004","q":"After a rejoin you catch sight of your flight lead again. Correct call:","options":["TALLY","VISUAL","HOLDING HANDS","POSIT"],"answer":1,"why":"VISUAL = friendly in sight (opposite BLIND). TALLY is reserved for the enemy."},{"id":"S005","q":"RWR shows an airborne-interceptor radar in SEARCH mode. The call is:","options":["SPIKE","SAM","NAILS","BUZZER"],"answer":2,"why":"NAILS = AI radar in search. SPIKE = track or launch. SAM is a visual missile sighting."},{"id":"S006","q":"RWR now shows that same threat radar in TRACK on you. The call is:","options":["NAILS","SPIKE","ROTATOR","MUSIC"],"answer":1,"why":"SPIKE [direction] = RWR indication of an AI threat in track or launch — the escalation from NAILS."},{"id":"S007","q":"Inbound helicopters ask LZ status. Enemy activity is BELOW the prebriefed risk level. You pass:","options":["CHERRY","GREEN","ICE","COLD"],"answer":2,"why":"ICE = below prebriefed risk (cancels CHERRY). CHERRY = above. GREEN/COLD carry different meanings."},{"id":"S008","q":"You reach the prebriefed fuel state — above recovery fuel — at which separation or event termination should begin. That fuel state is:","options":["BINGO","JOKER","PLAYTIME","RED"],"answer":1,"why":"JOKER sits above BINGO. BINGO is the fuel needed for recovery; PLAYTIME is time on station."},{"id":"S009","q":"Fuel and weapons are approaching — but not yet at — a state insufficient to continue the mission. You report:","options":["RED","GREEN","JOKER","YELLOW"],"answer":3,"why":"YELLOW is the caution band. RED = insufficient; GREEN = good to continue."},{"id":"S010","q":"AWACS needs you on Mode 3 code 4602. The directive term is:","options":["PARROT","SQUAWK","SWEET","STATUS"],"answer":1,"why":"SQUAWK [mode, code] operates the IFF. PARROT is the transponder itself; SWEET/SOUR are check results. Sheet prints it SQUWAK — pub spelling is SQUAWK."},{"id":"S011","q":"JTAC directs LASER ON. The moment the designating aircraft fires the laser, it responds:","options":["SPARKLE","LASING","CAPTURED","SHOPPING"],"answer":1,"why":"LASING is the response to LASER ON. SPARKLE is an IR pointer, not the designator."},{"id":"S012","q":"Maritime strike, non-CAS. ROE, PID, CDE, clear field of fire, and commander's guidance are all satisfied; C2 clears fires on surface coordinates. The clearance term is:","options":["CLEARED HOT","TARGET","SMACK","CONTINUE DRY"],"answer":2,"why":"SMACK is the non-CAS surface-fires clearance and is explicitly not used in CAS. CLEARED HOT belongs to JTAC Type 1/2 CAS."},{"id":"S013","q":"Type 2 CAS control; the JTAC grants weapons release on the briefed target. The call is:","options":["SMACK","CONTINUE DRY","CLEARED HOT","LASER ON"],"answer":2,"why":"CLEARED HOT = Type 1/2 CAS terminal-attack release clearance on a specific target."},{"id":"S014","q":"Type 2 CAS; the JTAC approves the run-in but withholds release this pass. The call is:","options":["ABORT","CLEARED HOT","ICE","CONTINUE DRY"],"answer":3,"why":"CONTINUE DRY = continue the maneuver, release NOT authorized; simulated deliveries allowed."},{"id":"S015","q":"You launch an AIM-120 (active-radar) at a HOSTILE group. Your launch call is:","options":["FOX ONE","FOX TWO","MAGNUM","FOX THREE"],"answer":3,"why":"FOX 1 semi-active, FOX 2 IR, FOX 3 active radar. MAGNUM is an antiradiation missile launch."},{"id":"S016","q":"You fire a HARM at an emitting SAM radar. Your launch call is:","options":["FOX THREE","MAGNUM","PIGS AWAY","AWAY"],"answer":1,"why":"MAGNUM [system, location] = friendly ARM launch. PIGS are glide weapons; FOX calls are air-to-air."},{"id":"S017","q":"Controller needs you at 14,000 ft MSL. The directive call is:","options":["ANGELS 14","LEVEL 14","ELEVATOR 14","STATUS 14"],"answer":2,"why":"ELEVATOR [altitude] directs the change in thousands of feet MSL. ANGELS reports altitude; LEVEL reports arrival/co-altitude."},{"id":"S018","q":"Two air contacts hold 2 NM apart in azimuth and range. Per the pub they are:","options":["Two separate GROUPs","A single GROUP","A HEAVY group","LEAD-TRAIL"],"answer":1,"why":"GROUP = contacts within 3 NM in azimuth and range. HEAVY needs 3+ contacts; LEAD-TRAIL is an inner-group range split."},{"id":"S019","q":"Strike lead moves the package to the briefed strike frequency, no acknowledgment required. The call is:","options":["CHATTERMARK","PUSH","FLOW","WORDS"],"answer":1,"why":"PUSH [channel] = switch frequency, no ack. CHATTERMARK is the anti-jam procedure; FLOW is a maneuver call."},{"id":"S020","q":"The net is being jammed; lead initiates the briefed comm procedures to counter it. The call is:","options":["PUSH","BUZZER","CHATTERMARK","WORDS"],"answer":2,"why":"CHATTERMARK = begin briefed anti-jam comm procedures. BUZZER names the jamming itself."},{"id":"S021","q":"The whole mission slips 15 minutes later than the original fragged timeline. The call is:","options":["LEEROY 15","ROLEX plus 15","PLAYTIME 15","AS FRAGGED"],"answer":1,"why":"ROLEX = later, always from the ORIGINAL planned time. LEEROY (its opposite) = earlier."},{"id":"S022","q":"A hostile fighter gets through the CAP layer toward the strikers. The defensive-layer call is:","options":["SQUIRTER","STRANGER","LEAKER","BOGEY"],"answer":2,"why":"LEAKER = airborne threat through a defensive layer. SQUIRTER is a ground object leaving the objective area."}]};
+// Brevity Quest engine. Injected after `const D` by build-game.js.
+// Memory ladder per term (recognition -> cued recall -> free recall -> production), spaced by level.
+const TEST_DEFAULT = ""; // build fills this for the private copy; the public copy leaves it empty and asks
+const LESSON = "";
+const testDate = () => S.test ? new Date(S.test) : TEST_DEFAULT ? new Date(TEST_DEFAULT) : null;
+const fmtDate = d => d.toLocaleString(undefined, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+function setTest(v){ if (v) { S.test = new Date(v).toISOString(); save(); } home(); }
+const T = D.terms.filter(t => !t.x);
+const BY = {}; D.terms.forEach(t => BY[t.t] = t);
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const rnd = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const pick1 = a => a[Math.floor(Math.random() * a.length)];
+const MIN = 60e3, HR = 60 * MIN, DAY = 24 * HR;
+const LV = ["New", "Recognize", "Fill the blank", "Name it", "Complete the definition", "Define it", "Mastered"];
+const GAP = [0, 5 * MIN, 20 * MIN, 2 * HR, 8 * HR, DAY, 3 * DAY]; // wait before the next review, by level reached
+const KL = { visTerm: 1, defTerm: 1, termDef: 1, duel: 1, scen: 1, blank: 2, type: 3, cloze: 4, define: 5 }; // level each question kind proves
+const GOAL = 200;
+const RANKS = [[0,"Nugget"],[10,"Wingman"],[30,"Two-Ship Lead"],[50,"Flight Lead"],[70,"Mission Commander"],[90,"Weapons Officer"]];
+const STOP = new Set("about above after again against along also another anything around because been before being below between both cannot could does doing down during each either every from further have having into itself just more most must other over same should since some such than that their them then there these they this those through under until upon very want were what when where which while will with within without would your used given based stated time area".split(" "));
+
+// Plain-word equivalents for the define-it keyword check (5-letter stems are compared).
+const SYN = [["stop","cease","terminate","halt","end","quit","abort"],["before","prior","until"],["after","following"],["see","sighting","sight","visual","eyes","seen","contact"],
+  ["enemy","hostile","bandit","threat","adversary","non-friendly"],["friend","friendly","own","blue"],["fire","firing","shoot","launch","release","employ","ordnance","weapon","weapons"],
+  ["not","no","negative","unable","without"],["aircraft","plane","jet","fighter"],["radar","sensor","scope"],["missile","sam"],["turn","maneuver","heading"],
+  ["altitude","angels","height"],["fuel","gas"],["position","location","spot","bullseye"],["target","objective"],["leave","depart","exit","egress"],["return","back","home","rtb"]];
+
+/* ---------- storage (works without it) ---------- */
+let S;
+try { S = JSON.parse(localStorage.getItem("bq.v2") || "null"); } catch (e) { S = null; }
+if (!S || typeof S !== "object") S = {};
+S.t = S.t || {}; S.xp = S.xp || 0; S.days = S.days || {}; S.best = S.best || {}; if (S.sound === undefined) S.sound = true;
+let SAVE_OK = true;
+function save(){ try { localStorage.setItem("bq.v2", JSON.stringify(S)); SAVE_OK = true; } catch (e) { SAVE_OK = false; } }
+const st = name => S.t[name] || (S.t[name] = { b: 0, due: 0, ok: 0, miss: 0 });
+const box = name => (S.t[name] || {}).b || 0;
+const mastered = () => T.filter(t => box(t.t) >= 6).length;
+const ready = () => Math.round(T.reduce((n, t) => n + box(t.t), 0) / (T.length * 6) * 100);
+const dkey = d => d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
+const today = () => dkey(new Date());
+function streak(){
+  let n = 0; const d = new Date();
+  if (!(S.days[today()] >= GOAL)) d.setDate(d.getDate() - 1);
+  while (S.days[dkey(d)] >= GOAL) { n++; d.setDate(d.getDate() - 1); }
+  return n;
+}
+function rank(p){ let r = RANKS[0], nx = null; RANKS.forEach((x, i) => { if (p >= x[0]) { r = x; nx = RANKS[i + 1] || null; } }); return { name: r[1], next: nx }; }
+
+/* ---------- sound + juice ---------- */
+let AC = null;
+function beep(kind){
+  if (!S.sound) return;
+  try {
+    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+    if (AC.state === "suspended") AC.resume();
+    const seq = kind === "ok" ? [[880, .06], [1320, .09]] : kind === "bad" ? [[220, .16]] : kind === "lvl" ? [[660, .08], [880, .08], [1320, .16]] : [[1000, .03]];
+    let t = AC.currentTime;
+    seq.forEach(([f, d]) => { const o = AC.createOscillator(), g = AC.createGain(); o.type = kind === "bad" ? "sawtooth" : "square"; o.frequency.value = f;
+      g.gain.setValueAtTime(.06, t); g.gain.exponentialRampToValueAtTime(.001, t + d); o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + d); t += d; });
+  } catch (e) {}
+}
+function floatText(s){ const el = document.createElement("div"); el.className = "float"; el.textContent = s; document.body.appendChild(el); setTimeout(() => el.remove(), 950); }
+function confetti(){
+  const cols = ["var(--acc)", "var(--acc2)", "var(--fr)", "var(--ho)"];
+  for (let i = 0; i < 40; i++) { const c = document.createElement("i"); c.className = "confetti";
+    c.style.left = Math.random() * 100 + "vw"; c.style.background = cols[i % 4]; c.style.animationDuration = (1.4 + Math.random() * 1.4) + "s"; c.style.animationDelay = Math.random() * .4 + "s";
+    document.body.appendChild(c); setTimeout(() => c.remove(), 3400); }
+}
+
+/* ---------- text helpers ---------- */
+const norm = s => String(s).toUpperCase().replace(/[^A-Z0-9]/g, "");
+const baseOf = name => name.replace(/\s*\(.*\)\s*$/, "").trim();
+const reEsc = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const termRe = (name, flags) => new RegExp("\\b" + reEsc(baseOf(name)).replace(/[-\s]+/g, "[-\\s]?") + "(s|es|ed|ing)?\\b", flags);
+function accepts(name){
+  const a = new Set([norm(name)]);
+  const m = name.match(/^(.*?)\s*\((.*)\)\s*$/);
+  if (m) { a.add(norm(m[1])); m[2].split("/").forEach(p => a.add(norm(m[1] + p))); }
+  if (name === "SQUAWK") a.add("SQUWAK"); // the test sheet's spelling
+  if (name === "BOGEY") a.add("BOGIE");
+  return a;
+}
+function lev(a, b){
+  const d = Array.from({ length: a.length + 1 }, (_, i) => [i]); for (let j = 1; j <= b.length; j++) d[0][j] = j;
+  for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) d[i][j] = Math.min(d[i-1][j] + 1, d[i][j-1] + 1, d[i-1][j-1] + (a[i-1] === b[j-1] ? 0 : 1));
+  return d[a.length][b.length];
+}
+// exact = right; close = one letter off on a long word (counted, spelling flagged)
+function check(input, targets){
+  const v = norm(input); if (!v) return { ok: false, close: false };
+  if (targets.has(v)) return { ok: true, close: false };
+  const close = v.length >= 5 && [...targets].some(a => a.length >= 6 && lev(a, v) === 1);
+  return { ok: close, close };
+}
+const mask = (text, name) => text.replace(termRe(name, "gi"), "▢▢▢");
+function hintOf(name){ // "KNOCK-IT-OFF" -> "K _ _ _ _ - I _ - O _ _"
+  return baseOf(name).split(/([-\s])/).map(w => /[-\s]/.test(w) ? (w === "-" ? " - " : "   ") : w.split("").map((c, i) => i === 0 ? c : "_").join(" ")).join("");
+}
+const contentWords = def => def.replace(/\[[^\]]*\]/g, " ").split(/[^A-Za-z0-9-]+/).filter(w => w.length >= 4 && !STOP.has(w.toLowerCase()) && !/^\d+$/.test(w));
+function clozeWords(t){
+  const own = new Set(baseOf(t.t).toLowerCase().split(/[-\s]+/));
+  let c = [...new Set(contentWords(t.def).filter(w => w.length >= 5 && !own.has(w.toLowerCase()) && !termRe(t.t, "i").test(w)))];
+  const isTerm = w => D.terms.some(x => norm(baseOf(x.t)) === norm(w));
+  const caps = c.filter(w => /[A-Z]/.test(w) && w === w.toUpperCase() && !isTerm(w)); // pub emphasis (NOT, FRIENDLY...) first; other call names last
+  c = rnd(caps).concat(rnd(c.filter(w => !caps.includes(w) && !isTerm(w))), rnd(c.filter(isTerm)));
+  return c.slice(0, t.def.length > 80 ? 2 : 1);
+}
+function distract(t, n){
+  const same = rnd(T.filter(x => x.c === t.c && x.t !== t.t));
+  return same.concat(rnd(T.filter(x => x.c !== t.c))).slice(0, n);
+}
+function scenTerm(ans){ // "FOX THREE" -> FOX (1/2/3); "A single GROUP" -> GROUP
+  if (BY[ans] && !BY[ans].x) return BY[ans];
+  let best = null;
+  T.forEach(t => { const b = baseOf(t.t); if (new RegExp("\\b" + reEsc(b).replace(/[-\s]+/g, "[-\\s]?") + "\\b").test(ans) && (!best || b.length > best.b.length)) best = { t, b }; });
+  return best ? best.t : null;
+}
+
+/* ---------- levels + XP ---------- */
+let RUN = null;
+function grade(name, result, kind){ // result: true | false | "close"
+  const s = st(name), lvl = KL[kind] || 1, r0 = rank(ready()).name, m0 = mastered();
+  // Climb one level per right answer, only on a question at or above the current level, and only once the review is due (spacing is the point).
+  const wasDue = Date.now() >= s.due, climbs = result === true && lvl >= s.b && wasDue;
+  if (result === true) { s.ok++; if (climbs) s.b = Math.min(6, s.b + 1); if (s.miss) s.miss--; }
+  else if (result === false) { s.miss++; if (s.b && !(lvl === 1 && s.b >= 3)) s.b = Math.max(1, s.b - 1); } // a mis-tap in a speed round doesn't undo recall
+  if (result !== true || climbs) s.due = Date.now() + (result === true ? GAP[s.b] : result === "close" ? 10 * MIN : 2 * MIN);
+  if (RUN) RUN.held = result === true && !climbs && lvl >= s.b;
+  let gain = 0;
+  if (result === true) { RUN.combo++; gain = (5 + 5 * lvl) * (RUN.combo >= 10 ? 3 : RUN.combo >= 5 ? 2 : 1); }
+  else { RUN.combo = 0; if (result === "close") gain = 5; }
+  RUN.best = Math.max(RUN.best, RUN.combo);
+  S.xp += gain; S.days[today()] = (S.days[today()] || 0) + gain; RUN.xp += gain; RUN.lastGain = gain;
+  if (gain) floatText("+" + gain);
+  const m1 = mastered(); if (m1 > m0) RUN.newM += m1 - m0;
+  const r1 = rank(ready()).name; if (r1 !== r0) { RUN.rankUp = r1; beep("lvl"); confetti(); }
+  save();
+}
+
+/* ---------- session builders ---------- */
+function due(pool){ const now = Date.now(); return pool.filter(t => box(t.t) > 0 && st(t.t).due <= now).sort((a, b) => st(a.t).due - st(b.t).due); }
+function kindFor(t){
+  const b = box(t.t);
+  if (b === 0) return "intro";
+  if (b === 1) return pick1(["visTerm", "defTerm", "termDef"]);
+  if (b === 2) return "blank";
+  if (b === 3) return "type";
+  if (b === 4) return clozeWords(t).length ? "cloze" : "define";
+  if (b === 5) return "define";
+  return pick1(clozeWords(t).length ? ["type", "cloze", "define", "define"] : ["type", "define"]);
+}
+function sortieItems(pool, n, fresh){
+  // due reviews first, then at most `fresh` new terms, then not-yet-due seen terms (lowest level first); more new terms only if still short
+  const d = due(pool).slice(0, n - fresh);
+  const nw = pool.filter(t => box(t.t) === 0);
+  let items = d.concat(nw.slice(0, fresh));
+  const seenRest = pool.filter(t => box(t.t) > 0 && !items.includes(t)).sort((a, b) => box(a.t) - box(b.t) || st(a.t).due - st(b.t).due);
+  items = items.concat(seenRest.slice(0, Math.max(0, n - items.length)));
+  if (items.length < fresh * 2) items = items.concat(nw.filter(t => !items.includes(t)).slice(0, 3)); // early days: a few extra new terms, never a wall of intros
+  return rnd(items.slice(0, n)).map(t => ({ t, k: kindFor(t) }));
+}
+const MODES = {
+  sortie(){ return { title: "Daily Sortie", items: sortieItems(T, 15, 5) }; },
+  cluster(ci){ return { title: D.clusters[ci], items: sortieItems(T.filter(t => t.c === ci), 10, 4) }; },
+  weak(){
+    const w = T.filter(t => (S.t[t.t] || {}).miss && box(t.t) < 6).sort((a, b) => st(b.t).miss - st(a.t).miss || box(a.t) - box(b.t)).slice(0, 12);
+    return { title: "Weak Spots", items: (w.length ? w : T.filter(t => box(t.t) > 0).slice(0, 12)).map(t => ({ t, k: kindFor(t) === "intro" ? "visTerm" : kindFor(t) })) };
+  },
+  define(){
+    const p3 = T.filter(t => box(t.t) >= 3), p1 = T.filter(t => box(t.t) >= 1);
+    const src = p3.length >= 5 ? p3 : p1.length ? p1 : T; // drill what you have seen; cold terms only climb one level anyway
+    return { title: "Define Drill", items: rnd(src).slice(0, 10).map(t => ({ t, k: "define" })) };
+  },
+  rush(){ return { title: "Radar Rush", rush: true, items: rnd(T).map(t => ({ t, k: pick1(["defTerm", "visTerm"]) })) }; },
+  duel(){
+    const sets = [];
+    D.groups.forEach(gs => gs.forEach(g => { const real = g.filter(k => !k.startsWith("x:")); if (real.length >= 2) sets.push(real); }));
+    return { title: "Mix-up Duel", items: rnd(sets).slice(0, 10).map(g => ({ t: BY[pick1(g)], k: "duel", group: g })) };
+  },
+  check(){ return { title: "Checkride", check: true, items: rnd(T).map(t => ({ t, k: "type" })) }; },
+  scen(){ return { title: "Scenarios", items: rnd(D.scen).slice(0, 10).map(s0 => { // shuffle options so the answer isn't position-guessable
+    const order = rnd(s0.options.map((o, i) => i));
+    return { s: { q: s0.q, why: s0.why, options: order.map(i => s0.options[i]), answer: order.indexOf(s0.answer) }, k: "scen" }; }) }; }
+};
+
+/* ---------- play ---------- */
+let timerId = null;
+function start(mode, arg){
+  clearInterval(timerId);
+  const m = MODES[mode](arg);
+  RUN = Object.assign(m, { mode, arg, i: 0, right: 0, combo: 0, best: 0, xp: 0, newM: 0, missed: [], rankUp: null, busy: false, end: m.rush ? Date.now() + 60e3 : 0 });
+  show("play"); ask();
+  if (m.rush) timerId = setInterval(() => { if (!RUN) return clearInterval(timerId); const left = Math.max(0, Math.ceil((RUN.end - Date.now()) / 1000)); const el = $("tm"); if (el) { el.textContent = left; el.classList.toggle("low", left <= 10); } if (left <= 0) finish(); }, 250);
+}
+function head(){
+  const left = RUN.rush ? Math.max(0, Math.ceil((RUN.end - Date.now()) / 1000)) : 0, n = RUN.items.length;
+  return `<div class="top"><button class="x" onclick="quit()" aria-label="Quit">✕</button>` +
+    (RUN.rush ? `<div class="grow"><div class="lbl">Radar Rush · ${RUN.right} kills</div></div><span class="pill ${RUN.combo >= 5 ? "hot" : ""}">x${RUN.combo >= 10 ? 3 : RUN.combo >= 5 ? 2 : 1} · ${RUN.combo}</span><div class="timer ${left <= 10 ? "low" : ""}" id="tm">${left}</div>`
+      : `<div class="prog"><i style="width:${RUN.i / n * 100}%"></i></div><span class="pill tab">${Math.min(RUN.i + 1, n)}/${n}</span><span class="pill ${RUN.combo >= 5 ? "hot" : ""}">🔥${RUN.combo}</span>`) + `</div>`;
+}
+const lvlTag = (t, k) => RUN.rush || RUN.check ? "" : `<span class="lvl">Level ${KL[k] || 0}</span> `;
+const scopeText = s => `<p class="prompt" style="position:relative;z-index:1;color:#e4ebf0">${s}</p>`;
+function ask(){
+  if (!RUN) return;
+  if (RUN.i >= RUN.items.length) return finish();
+  RUN.busy = false; RUN.shown = Date.now();
+  const it = RUN.items[RUN.i], t = it.t; let h = head();
+  const typeForm = (ph, btn) => `<form class="typebox" onsubmit="event.preventDefault();typed()"><input id="ans" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" placeholder="${ph}" enterkeyhint="go">
+      <div class="btns"><button type="button" class="go alt" onclick="typed(true)">Show me</button><button class="go">${btn}</button></div></form><div id="fb"></div>`;
+  if (it.k === "intro") {
+    h += `<div class="panel intro"><div><span class="newtag">NEW TERM</span></div><div class="scope">${V.render(t.t)}</div><div class="tname">${esc(t.t)}</div>
+      <p class="prompt">${esc(t.plain)}</p><p class="def"><span class="lbl">Pub definition</span><br>${esc(t.def)}</p><p class="hook"><b>HOOK</b> ${esc(t.hook)}</p>
+      <p class="note">Read it, picture it, say it once out loud. You'll be tested on it in a few cards.</p>
+      <button class="go" onclick="introDone()">Got it</button></div>`;
+  } else if (it.k === "scen") {
+    const s = it.s;
+    h += `<div class="scope"><div class="kind">Scenario · apply it</div>${scopeText(esc(s.q))}</div>
+      <div class="opts">${s.options.map((o, i) => `<button class="opt t" onclick="pickScen(${i})">${esc(o)}</button>`).join("")}</div><div id="fb"></div>`;
+  } else if (it.k === "blank") {
+    h += `<div class="scope"><div class="kind">${lvlTag(t, "blank")}Fill in the blank</div>${scopeText(esc(mask(t.def, t.t)))}<div class="hint">${hintOf(t.t).split(/ {3}/).map(w => `<span style="white-space:nowrap">${esc(w)}</span>`).join(" &nbsp; ")}</div></div>` + typeForm("Finish the word", "Check");
+  } else if (it.k === "type") {
+    h += `<div class="scope"><div class="kind">${lvlTag(t, "type")}${RUN.check ? "Checkride · " : ""}Name the call</div>${scopeText(esc(mask(t.def, t.t)))}</div>` + typeForm("Type the brevity word", RUN.check ? "Next" : "Call it");
+  } else if (it.k === "cloze") {
+    const words = it.words || (it.words = clozeWords(t));
+    let d = esc(t.def); words.forEach((w, i) => { d = d.replace(new RegExp("\\b" + reEsc(esc(w)) + "\\b", "g"), `<span class="blank">${i + 1}</span>`); });
+    h += `<div class="scope"><div class="kind">${lvlTag(t, "cloze")}Complete the definition</div><div class="termq" style="position:relative;z-index:1;color:#e4ebf0;padding-block:6px">${esc(t.t)}</div>${scopeText(d)}</div>
+      <form class="typebox" onsubmit="event.preventDefault();clozed()">${words.map((w, i) => `<input id="cz${i}" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" placeholder="Blank ${i + 1}" style="text-transform:none;font-size:22px">`).join("")}
+      <div class="btns"><button type="button" class="go alt" onclick="clozed(true)">Show me</button><button class="go">Check</button></div></form><div id="fb"></div>`;
+  } else if (it.k === "define") {
+    h += `<div class="scope"><div class="kind">${lvlTag(t, "define")}Define it from memory</div><div class="termq" style="position:relative;z-index:1;color:#e4ebf0">${esc(t.t)}</div></div>
+      <div id="dz" class="typebox"><textarea class="say" id="say" placeholder="Write the definition in your own words, or say it out loud, then reveal."></textarea>
+      <button class="go" onclick="reveal()">Reveal the pub definition</button></div><div id="fb"></div>`;
+  } else {
+    let opts, prompt;
+    if (it.k === "duel") { opts = rnd(it.group.map(k => BY[k])); prompt = `<div class="kind">Mix-up duel · which one?</div>${scopeText(esc(mask(t.def, t.t)))}`; }
+    else opts = rnd([t].concat(distract(t, 3)));
+    if (it.k === "visTerm") prompt = `<div class="kind">${lvlTag(t, "visTerm")}What's the call?</div>${V.render(t.t)}${scopeText(esc(t.plain)).replace("z-index:1;", "z-index:1;margin-top:8px;")}`;
+    if (it.k === "defTerm") prompt = `<div class="kind">${lvlTag(t, "defTerm")}Match the definition</div>${scopeText(esc(mask(t.def, t.t)))}`;
+    if (it.k === "termDef") prompt = `<div class="kind">${lvlTag(t, "termDef")}What does it mean?</div><div class="termq" style="position:relative;z-index:1;color:#e4ebf0">${esc(t.t)}</div>`;
+    it.opts = opts;
+    h += `<div class="scope">${prompt}</div><div class="opts">${opts.map((o, i) => `<button class="opt ${it.k === "termDef" ? "" : "t"}" onclick="pick(${i})">${esc(it.k === "termDef" ? mask(o.def, o.t) : o.t)}</button>`).join("")}</div><div id="fb"></div>`;
+  }
+  $("play").innerHTML = h;
+  window.scrollTo(0, 0);
+}
+function introDone(){ // test the new term a few cards later, not right after showing it
+  if (!RUN || fresh()) return;
+  const it = RUN.items[RUN.i]; st(it.t.t).b = Math.max(1, box(it.t.t)); save();
+  RUN.items.splice(RUN.i, 1);
+  RUN.items.splice(Math.min(RUN.i + 3, RUN.items.length), 0, { t: it.t, k: "visTerm" });
+  ask();
+}
+function lock(){ document.querySelectorAll(".opt").forEach(b => b.disabled = true); }
+function feedback(ok, t, extra){
+  if (ok === true) RUN.right++; else if (t) RUN.missed.push(t);
+  beep(ok === true ? "ok" : "bad");
+  if (ok !== true) { const p = $("play"); p.classList.remove("shake"); void p.offsetWidth; p.classList.add("shake"); }
+  if (RUN.rush || RUN.check) { RUN.i++; const r = RUN; setTimeout(() => { if (RUN === r) ask(); }, RUN.rush && !ok ? 900 : 220); return; }
+  const lv = t ? box(t.t) : 0;
+  $("fb").innerHTML = `<div class="fb ${ok === true ? "" : "miss"}"><h3>${ok === true ? pick1(["Splash one!", "Good hit.", "Shack!", "Tally, nice.", "Copy, correct."]) : ok === "close" ? "Close" : "Miss"}</h3>` +
+    (t ? `<div class="ans">${esc(t.t)} <span class="lvl ${lv >= 6 ? "l6" : ""}">${RUN.held ? "Holding at" : "Now"} level ${lv} · ${LV[lv]}</span></div>${RUN.held ? `<p class="note">Right, but it climbs only when its review comes due. Spacing is what makes it stick.</p>` : ""}<p class="def">${esc(t.def)}</p>${t.hook ? `<p class="hook"><b>HOOK</b> ${esc(t.hook)}</p>` : ""}` : "") +
+    (extra ? `<p class="why">${esc(extra)}</p>` : "") + `<button class="go" onclick="next()">Next</button></div>`;
+  $("fb").scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+function next(){ if (!RUN || !RUN.busy) return; RUN.i++; ask(); } // busy = answered; a second tap finds busy reset and does nothing
+const fresh = () => RUN && Date.now() - RUN.shown < 350; // swallow the tail of a double tap
+function guard(){ if (!RUN || RUN.busy || fresh()) return false; RUN.busy = true; return true; }
+function pick(i){
+  if (!guard()) return;
+  const it = RUN.items[RUN.i], ok = it.opts[i] === it.t; lock();
+  document.querySelectorAll(".opt").forEach((b, j) => { if (it.opts[j] === it.t) b.classList.add("good"); else if (j === i) b.classList.add("bad"); });
+  grade(it.t.t, ok, it.k);
+  const o = it.opts[i];
+  feedback(ok, it.t, ok ? "" : it.k === "termDef" ? `That one was ${o.t}.` : `${o.t} means: ${o.def}`);
+}
+function typed(giveUp){
+  if (!RUN || RUN.busy || fresh()) return;
+  const it = RUN.items[RUN.i], raw = ($("ans") || {}).value || "";
+  if (!giveUp && !norm(raw)) return;
+  RUN.busy = true;
+  const r = giveUp ? { ok: false, close: false } : check(raw, accepts(it.t.t));
+  document.querySelector(".typebox").innerHTML = `<input value="${esc(raw)}" disabled style="border-color:var(--${r.ok ? "ok" : "bad"})">`;
+  grade(it.t.t, r.ok, it.k);
+  feedback(r.ok, it.t, r.close ? `Counted, but check the spelling: ${it.t.t}.` : r.ok ? (it.k === "blank" ? "Cued recall done. Next time: no hint." : "Recalled cold. That's what the test asks.") : "");
+}
+function clozed(giveUp){
+  if (!RUN || RUN.busy || fresh()) return;
+  if (!RUN.items[RUN.i].words.length) return;
+  const it = RUN.items[RUN.i], vals = it.words.map((w, i) => ($("cz" + i) || {}).value || "");
+  if (!giveUp && vals.every(v => !norm(v))) return;
+  RUN.busy = true;
+  const res = it.words.map((w, i) => giveUp ? { ok: false } : check(vals[i], new Set(["", "S", "ES", "ED", "ING"].map(x => norm(w) + x).concat(norm(w).replace(/(S|ES|ED|ING)$/, "")))));
+  const ok = res.every(r => r.ok), spell = res.some(r => r.close);
+  document.querySelector(".typebox").innerHTML = it.words.map((w, i) => `<input value="${esc(vals[i])}" disabled style="text-transform:none;font-size:20px;border-color:var(--${res[i].ok ? "ok" : "bad"})">`).join("");
+  grade(it.t.t, ok, "cloze");
+  feedback(ok, it.t, (ok ? "" : "Missing: " + it.words.map((w, i) => res[i].ok ? null : `${i + 1} = ${w}`).filter(Boolean).join(", ") + ". ") + (spell ? "Watch the spelling." : ""));
+}
+function reveal(){
+  if (!RUN || RUN.busy || fresh()) return;
+  const it = RUN.items[RUN.i], t = it.t, said = ($("say") || {}).value || "";
+  const stem = w => w.slice(0, 5);
+  const mine = new Set(said.toLowerCase().replace(/-/g, " ").split(/[^a-z0-9]+/).filter(Boolean).map(stem));
+  SYN.forEach(g => { if (g.some(w => mine.has(w.slice(0, 5)))) g.forEach(w => mine.add(w.slice(0, 5))); }); // your words, not the pub's, still count
+  const own = new Set(baseOf(t.t).toLowerCase().split(/[-\s]+/).map(stem));
+  const keys = [...new Set(contentWords(t.def).map(w => w.toLowerCase()))].filter(k => !own.has(stem(k)));
+  const hit = keys.filter(k => k.split("-").filter(Boolean).every(p => mine.has(stem(p))));
+  const cover = keys.length ? hit.length / keys.length : 0, wrote = said.trim().length > 0; it.wrote = wrote;
+  let d = esc(t.def);
+  keys.forEach(k => { d = d.replace(new RegExp("\\b(" + reEsc(k) + ")\\b", "gi"), m => `<span class="${hit.includes(k) ? "kw" : "kwmiss"}">${m}</span>`); });
+  const sug = !wrote ? "" : cover >= .45 ? "y" : cover >= .2 ? "c" : "n";
+  $("dz").innerHTML = (wrote ? `<div class="panel"><div class="lbl">You wrote</div><p class="def">${esc(said)}</p></div>` : "") +
+    `<div class="panel"><div class="lbl">Pub definition${wrote ? ` · you hit ${hit.length} of ${keys.length} key words` : ""}</div><p class="def">${d}</p><p class="hook"><b>HOOK</b> ${esc(t.hook)}</p></div>
+    <div class="lbl">Grade yourself honestly. Meaning counts, not exact words.</div>
+    <div class="self"><button class="${sug === "n" ? "sug" : ""}" onclick="selfGrade(false)">Missed</button><button class="${sug === "c" ? "sug" : ""}" onclick="selfGrade('close')">Close</button><button class="${sug === "y" ? "sug" : ""}" onclick="selfGrade(true)">Nailed it</button></div>`;
+}
+function selfGrade(r){
+  if (!guard()) return;
+  const it = RUN.items[RUN.i];
+  grade(it.t.t, r, "define");
+  if (r === true && !it.wrote) { const cut = Math.min(RUN.lastGain || 0, 20); S.xp -= cut; S.days[today()] -= cut; RUN.xp -= cut; save(); } // said aloud: same level credit, less XP
+  if (r === true) RUN.right++; else if (r === false) RUN.missed.push(it.t);
+  beep(r === true ? "ok" : "bad");
+  const lv = box(it.t.t);
+  $("dz").insertAdjacentHTML("beforeend", "");
+  $("fb").innerHTML = `<div class="fb ${r === true ? "" : "miss"}"><h3>${r === true ? "Defined from memory" : r === "close" ? "Close. It'll come back soon." : "It'll come back in a few minutes."}</h3><div class="ans">${esc(it.t.t)} <span class="lvl ${lv >= 6 ? "l6" : ""}">Now level ${lv} · ${LV[lv]}</span></div><button class="go" onclick="next()">Next</button></div>`;
+  document.querySelectorAll(".self button").forEach(b => b.disabled = true);
+  $("fb").scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+function pickScen(i){
+  if (!guard()) return;
+  const it = RUN.items[RUN.i], s = it.s, ok = i === s.answer; lock();
+  document.querySelectorAll(".opt").forEach((b, j) => { if (j === s.answer) b.classList.add("good"); else if (j === i) b.classList.add("bad"); });
+  const t = scenTerm(s.options[s.answer]);
+  if (t) grade(t.t, ok, "scen");
+  else { if (ok) { RUN.combo++; RUN.best = Math.max(RUN.best, RUN.combo); S.xp += 10; RUN.xp += 10; S.days[today()] = (S.days[today()] || 0) + 10; floatText("+10"); save(); } else RUN.combo = 0; }
+  feedback(ok, t, s.why);
+}
+function quit(){ clearInterval(timerId); RUN = null; home(); }
+function finish(){
+  clearInterval(timerId);
+  if (!RUN) return;
+  const r = RUN; RUN = null;
+  const n = r.rush ? r.i : r.items.length, pct = n ? Math.round(r.right / n * 100) : 0;
+  let banner = "";
+  if (r.rush && r.right > (S.best.rush || 0)) { S.best.rush = r.right; banner = "New Radar Rush record!"; }
+  if (r.check && pct > (S.best.check || 0)) { S.best.check = pct; banner = "New Checkride best!"; }
+  if (r.rankUp) banner = "Promoted: " + r.rankUp;
+  save();
+  if (banner || (pct === 100 && n >= 5)) { confetti(); beep("lvl"); }
+  const miss = [...new Map(r.missed.filter(Boolean).map(t => [t.t, t])).values()];
+  show("play");
+  $("play").innerHTML = `<div class="panel res"><div class="lbl">${esc(r.title)} complete</div>
+    ${banner ? `<div class="banner">${esc(banner)}</div>` : ""}
+    <div class="big-n tab">${r.rush ? r.right : pct + "%"}</div><div class="lbl">${r.rush ? "kills in 60 s · best " + (S.best.rush || 0) : r.right + " of " + n + " correct"}</div>
+    <div class="stats"><div class="stat"><b>+${r.xp}</b><span class="lbl">XP</span></div><div class="stat"><b>${r.best}</b><span class="lbl">Best combo</span></div><div class="stat"><b>${r.newM}</b><span class="lbl">New mastered</span></div></div>
+    ${r.check ? `<p class="note">Checkride is pure recall: definition in, brevity word out, typed. Aim for 90%+ before test day.</p>` : ""}
+    ${r.rush ? `<p class="note">Rush builds speed. It can lift a term to Fill the blank at most; typing and defining do the rest.</p>` : ""}
+    <div class="btns"><button class="go alt" onclick="quit()">Home</button><button class="go" onclick="start('${r.mode}'${r.arg !== undefined ? "," + r.arg : ""})">Fly again</button></div></div>
+    ${miss.length ? `<div class="panel"><div class="lbl" style="margin-bottom:8px">Debrief · ${miss.length} to review (they come back in minutes)</div><div class="missed">${miss.map(t => `<div><b>${esc(t.t)}</b>${esc(t.def)}${t.hook ? `<br><span class="why">Hook: ${esc(t.hook)}</span>` : ""}</div>`).join("")}</div></div>` : ""}`;
+  window.scrollTo(0, 0);
+}
+
+/* ---------- memory palace (method of loci + blurt recall) ---------- */
+// One room per topic, walked in mission order. Terms keep GROUPS order so look-alikes sit side by side.
+const ROOMS = [[6, "Ops desk", "check-in, fuel and comms"], [0, "Radar scope", "who's out there"], [1, "ID booth", "who they are"], [5, "EW shack", "what the sensors hear"],
+  [4, "The merge", "how you move"], [3, "Weapons rack", "what you shoot"], [2, "Abort handle", "how you stop"]];
+const roomTerms = ci => D.groups[ci].flat().filter(k => !k.startsWith("x:")).map(k => BY[k]);
+S.pal = S.pal || {};
+function palace(){
+  clearInterval(timerId); RUN = null; show("play");
+  $("play").innerHTML = `<div class="top"><button class="x" onclick="home()" aria-label="Back">←</button><h2 class="grow" style="font-size:26px">Memory Palace</h2></div>
+    <div class="panel"><p class="def">Walk a mission from check-in to knock-it-off. Each room holds one topic's calls in a fixed order. <b>Walk</b> a room and picture each call at its own spot, using the drawing and hook. Then <b>Blurt</b>: list every call in the room from memory, with no prompts. Misses get first-letter cues for a second try.</p></div>
+    <div class="sorties">${ROOMS.map(([ci, name, sub], i) => { const n = roomTerms(ci).length, b = S.pal[ci] || 0;
+      return `<div class="sortie" style="grid-template-columns:28px 1fr"><span class="n">${i + 1}</span><div class="grow"><h3>${name} <span class="lbl">· ${sub}</span></h3>
+        <div class="bar"><i style="width:${b}%;background:var(--acc)"></i></div><div class="lbl" style="margin:4px 0 8px">${n} calls · best blurt ${b}%</div>
+        <div class="btns"><button class="go alt" onclick="walk(${i})">Walk</button><button class="go" onclick="blurt(${i})">Blurt</button></div></div></div>`; }).join("")}</div>`;
+  window.scrollTo(0, 0);
+}
+function walk(ri){
+  const [ci, name, sub] = ROOMS[ri], ts = roomTerms(ci);
+  $("play").innerHTML = `<div class="top"><button class="x" onclick="palace()" aria-label="Back">←</button><h2 class="grow" style="font-size:24px">Room ${ri + 1}: ${name}</h2></div>
+    <p class="note">Go in order. At each spot, look at the drawing, read the hook and say the call out loud. Link each one to the one before it.</p>
+    <div class="lib">${ts.map((t, i) => `<div class="lc"><div class="row"><span class="n" style="font-family:var(--display);font-size:28px;font-weight:700;color:var(--acc2)">${i + 1}</span><h3 class="grow">${esc(t.t)}</h3></div>${V.render(t.t)}<p class="hook"><b>HOOK</b> ${esc(t.hook)}</p><p class="def">${esc(t.def)}</p></div>`).join("")}</div>
+    <div class="btns" style="margin-top:12px"><button class="go" onclick="blurt(${ri})">Blurt this room</button></div>`;
+  window.scrollTo(0, 0);
+}
+function blurt(ri){
+  const [ci, name] = ROOMS[ri], n = roomTerms(ci).length;
+  $("play").innerHTML = `<div class="top"><button class="x" onclick="palace()" aria-label="Back">←</button><h2 class="grow" style="font-size:24px">Blurt: ${name}</h2></div>
+    <div class="scope"><div class="kind">Free recall · ${n} calls live here</div>${scopeText("Walk the room in your head. Type every call you find, one per line or separated by commas.")}</div>
+    <div class="typebox"><textarea class="say" id="bl" autocapitalize="characters" autocorrect="off" spellcheck="false" placeholder="TALLY, NO JOY, …"></textarea>
+    <button class="go" onclick="blurtCheck(${ri},1)">Check my list</button></div><div id="blr"></div>`;
+  window.scrollTo(0, 0);
+}
+function blurtCheck(ri, round){
+  const [ci, name] = ROOMS[ri], ts = roomTerms(ci);
+  const got = new Set(round === 2 ? JSON.parse($("blr").dataset.got || "[]") : []);
+  const said = ($(round === 1 ? "bl" : "bl2") || {}).value || "";
+  said.split(/[\n,;]+/).map(s => s.trim()).filter(Boolean).forEach(s => ts.forEach(t => { if (check(s, accepts(t.t)).ok) got.add(t.t); }));
+  const miss = ts.filter(t => !got.has(t.t)), pct = Math.round(got.size / ts.length * 100);
+  if (round === 1) { const g = Math.max(0, got.size - Math.round((S.pal[ci] || 0) / 100 * ts.length)) * 5; S.xp += g; S.days[today()] = (S.days[today()] || 0) + g; if (g) floatText("+" + g); }
+  if (round === 1 && pct > (S.pal[ci] || 0)) S.pal[ci] = pct;
+  save(); beep(miss.length ? "bad" : "lvl"); if (!miss.length) confetti();
+  const list = ts.map((t, i) => `<div style="border-left-color:var(--${got.has(t.t) ? "ok" : "bad"})"><b>${i + 1}. ${got.has(t.t) ? esc(t.t) : round === 1 ? esc(hintOf(t.t)) : esc(t.t)}</b>${round === 2 && !got.has(t.t) ? esc(t.def) : ""}</div>`).join("");
+  $("blr").dataset.got = JSON.stringify([...got]);
+  $("blr").innerHTML = `<div class="panel"><div class="lbl">${round === 1 ? "First pass" : "With cues"} · ${got.size} of ${ts.length} (${pct}%)</div><div class="missed" style="margin-top:8px">${list}</div></div>` +
+    (round === 1 && miss.length ? `<div class="typebox"><div class="lbl">Second try: use the first-letter cues and the room order</div><textarea class="say" id="bl2" autocapitalize="characters" autocorrect="off" spellcheck="false"></textarea><div class="btns"><button class="go alt" onclick="blurtCheck(${ri},2)">Give up, show me</button><button class="go" onclick="blurtCheck(${ri},2)">Check</button></div></div>`
+      : `<div class="btns"><button class="go alt" onclick="walk(${ri})">Walk it again</button><button class="go" onclick="${ri < ROOMS.length - 1 ? `blurt(${ri + 1})">Next room` : `palace()">Done`}</button></div>`);
+  const tb = document.querySelector("#play > .typebox"); if (tb) tb.remove();
+}
+
+/* ---------- home ---------- */
+function show(id){ ["home", "play", "lib"].forEach(x => $(x).hidden = x !== id); }
+function home(){
+  show("home");
+  const p = ready(), m = mastered(), r = rank(p), seen = T.filter(t => box(t.t) > 0).length, dueN = due(T).length;
+  const TD = testDate(), ms = TD ? TD - Date.now() : 0, days = Math.floor(ms / DAY), hrs = Math.floor(ms % DAY / HR);
+  const todayXp = S.days[today()] || 0, C = 2 * Math.PI * 36, weakN = T.filter(t => (S.t[t.t] || {}).miss && box(t.t) < 6).length;
+  const lvCount = [0, 1, 2, 3, 4, 5, 6].map(l => T.filter(t => box(t.t) === l).length);
+  const nextTxt = r.next ? `${r.next[0] - p}% more readiness to ${r.next[1]}` : "Top rank. Keep it warm.";
+  $("home").innerHTML = `
+  <div class="panel hud">
+    <svg class="ring" viewBox="0 0 84 84" aria-label="Readiness ${p} percent"><circle cx="42" cy="42" r="36" style="stroke:var(--tint)"/><circle cx="42" cy="42" r="36" style="stroke:var(--acc);stroke-dasharray:${C * p / 100} ${C};stroke-linecap:round" transform="rotate(-90 42 42)"/>
+      <text x="42" y="45" text-anchor="middle" style="fill:var(--ink);font:700 22px var(--display)">${p}%</text><text x="42" y="58" text-anchor="middle" style="fill:var(--mute);font:8px var(--mono)">READY</text></svg>
+    <div class="grow"><div class="lbl">Rank</div><div class="rank">${esc(r.name)}</div><div class="note">${esc(nextTxt)}</div>
+      <div class="xpbar"><i style="width:${Math.min(100, todayXp / GOAL * 100)}%"></i></div><div class="lbl" style="margin-top:4px">Today ${todayXp}/${GOAL} XP · total ${S.xp}</div></div>
+    <div class="streak">${streak()}🔥<small>day streak</small></div>
+  </div>
+  <div class="panel count">${TD ? `<div><div class="lbl">Brevity test · ${esc(fmtDate(TD))}</div>${ms > 0 ? `<b class="tab">${days}d ${hrs}h</b>` : `<b>Test day</b>`}<div><button class="ghost" style="padding:4px 8px;margin-top:4px" onclick="S.test=null;save();home()">${TEST_DEFAULT ? "Change" : "Change date"}</button></div></div>`
+    : `<div><div class="lbl">When is your test?</div><input type="datetime-local" class="search" style="margin-top:6px" onchange="setTest(this.value)"><div class="note">Saved on this phone only.</div></div>`}<div class="note">${LESSON ? esc(LESSON) + "<br>" : ""}${seen}/100 seen · ${m} mastered · ${dueN} due</div></div>
+  <div class="panel"><div class="lbl">Memory ladder · terms at each level</div><div class="ladder" title="levels 0 to 6">${lvCount.map((c, l) => `<i style="background:color-mix(in srgb,var(--acc) ${l === 0 ? 0 : 15 + l * 14}%,var(--tint));flex:${Math.max(c, .6)}"></i>`).join("")}</div>
+    <div class="lbl" style="margin-top:6px">${lvCount.map((c, l) => `L${l} ${c}`).join(" · ")}</div></div>
+  ${(() => { // pace: level climbs left vs days left; a sortie yields about 12 climbs
+    const left = T.reduce((n, t) => n + 6 - box(t.t), 0), dl = Math.max(1, Math.ceil(ms / DAY)), per = Math.ceil(left / dl), sorties = Math.min(6, Math.max(1, Math.ceil(per / 12)));
+    return ms > 0 && left ? `<div class="panel"><div class="lbl">Pace to be test-ready</div><p class="def" style="margin-top:4px"><b>${sorties} sorties a day</b>, spread out (morning, lunch, evening). ${left} level climbs left over ${dl} days. Spacing the sessions is what lets terms climb.</p></div>` : "";
+  })()}
+  <button class="big" onclick="start('sortie')"><h2>▶ Daily Sortie</h2><p>15 cards · ${dueN ? dueN + " due for review" : "new terms + review"} · each term climbs the ladder · about 8 min</p></button>
+  <div class="modes">
+    <button class="mode wide" onclick="palace()"><h3>🏛 Memory Palace</h3><span>Seven rooms, one mission. Place every call at its own spot, then blurt each room from memory. This is the method-of-loci technique bar-exam students use.</span><em>${ROOMS.filter(([ci]) => (S.pal[ci] || 0) >= 90).length}/7 rooms at 90%+</em></button>
+    <button class="mode" onclick="start('define')"><h3>Define Drill</h3><span>See the word, give the definition from memory.</span><em>Level 5 practice</em></button>
+    <button class="mode" onclick="start('check')"><h3>Checkride</h3><span>All 100. Definition in, word typed out.</span><em>Best ${S.best.check !== undefined ? S.best.check + "%" : "none"}</em></button>
+    <button class="mode" onclick="start('rush')"><h3>Radar Rush</h3><span>60 s speed round. Combos multiply XP.</span><em>Best ${S.best.rush || 0} kills</em></button>
+    <button class="mode" onclick="start('duel')"><h3>Mix-up Duel</h3><span>Look-alike terms, head to head.</span><em>10 rounds</em></button>
+    <button class="mode" onclick="start('scen')"><h3>Scenarios</h3><span>Pick the right call in context.</span><em>${D.scen.length} situations</em></button>
+    <button class="mode" onclick="start('weak')" ${weakN || seen ? "" : "disabled"}><h3>Weak Spots</h3><span>The terms you've missed most.</span><em>${weakN} flagged</em></button>
+  </div>
+  <div class="lbl">Sorties by topic · ★ all seen · ★★ all at level 3+ · ★★★ all mastered</div>
+  <div class="sorties">${D.clusters.map((c, ci) => {
+    const ts = T.filter(t => t.c === ci), n = ts.length, avg = ts.reduce((a, t) => a + box(t.t), 0) / (n * 6);
+    const stars = (ts.every(t => box(t.t) > 0) ? 1 : 0) + (ts.every(t => box(t.t) >= 3) ? 1 : 0) + (ts.every(t => box(t.t) >= 6) ? 1 : 0);
+    return `<button class="sortie" onclick="start('cluster',${ci})"><span class="n">${ci + 1}</span><div class="grow"><h3>${esc(c)}</h3><div class="bar"><i style="width:${avg * 100}%;background:var(--acc)"></i></div><div class="lbl" style="margin-top:4px">${n} terms · ${ts.filter(t => box(t.t) >= 6).length} mastered</div></div><span class="stars">${[0, 1, 2].map(i => `<span class="${i < stars ? "" : "off"}">★</span>`).join("")}</span></button>`;
+  }).join("")}</div>
+  <details class="how"><summary>How the levels work</summary>
+    <ol start="0">${LV.map((l, i) => `<li><b>${l}</b>${["", ": pick the word from four (recognition, the easiest kind of memory)", ": type the word with its first letters shown (cued recall)", ": type the word from the definition alone (free recall)", ": type the missing key words of the definition", ": write or say the whole definition, then grade yourself", ": comes back every few days to stay sharp"][i]}</li>`).join("")}</ol>
+    <p class="note">Each right answer moves a term up one level and pushes its next review further out; a miss drops it one level and brings it back in minutes. Multiple choice can only take a term to level 2, so recall does the real work. This follows the testing effect, spaced repetition and the recognition-to-recall ladder (Roediger &amp; Karpicke 2006; Leitner boxes).</p>
+  </details>
+  <div class="links"><button class="ghost" onclick="lib()">📖 Library</button><button class="ghost" onclick="S.sound=!S.sound;save();home()">${S.sound ? "🔊 Sound on" : "🔇 Sound off"}</button><button class="ghost" onclick="reset(this)">Reset progress</button></div>
+  <p class="note">Definitions come from the BOLDFACE condensed paraphrase of ATP 1-02.1 (25 Apr 2025), not verbatim pub text. Progress is saved on this device only.</p>
+  ${SAVE_OK ? "" : `<p class="note" style="color:var(--bad)">This viewer isn't saving progress. Open the file in the Documents app (Readdle) to keep it.</p>`}`;
+}
+function reset(b){
+  if (b.dataset.arm) { S = { t: {}, xp: 0, days: {}, best: {}, pal: {}, sound: S.sound }; save(); home(); return; }
+  b.dataset.arm = 1; b.textContent = "Tap again to erase all progress"; b.style.color = "var(--bad)";
+  setTimeout(() => { if (b.isConnected) { delete b.dataset.arm; b.textContent = "Reset progress"; b.style.color = ""; } }, 3500);
+}
+
+/* ---------- library ---------- */
+function lib(){
+  show("lib");
+  $("lib").innerHTML = `<div class="top" style="margin-bottom:10px"><button class="x" onclick="home()" aria-label="Back">←</button><h2 class="grow" style="font-size:26px">Library</h2></div>
+    <input class="search" type="search" placeholder="Search terms or definitions" oninput="libList(this.value)"><div id="ll" class="lib" style="margin-top:10px"></div>`;
+  libList("");
+}
+function libList(q){
+  q = q.trim().toLowerCase();
+  let h = "";
+  D.clusters.forEach((c, ci) => {
+    const ts = D.terms.filter(t => t.c === ci && (!q || (t.t + " " + t.def).toLowerCase().includes(q)));
+    if (!ts.length) return;
+    h += `<div class="clh">${esc(c)}</div>` + ts.map(t => t.x
+      ? `<div class="lc" style="border-style:dashed"><h3>${esc(t.t)}<span class="lbl">not on test sheet</span></h3><p class="def">${esc(t.def)}</p></div>`
+      : `<div class="lc">${V.render(t.t)}<h3>${esc(t.t)}<span class="lvl ${box(t.t) >= 6 ? "l6" : ""}">L${box(t.t)} · ${LV[box(t.t)]}</span></h3><p class="plain">${esc(t.plain)}</p><p class="def">${esc(t.def)}</p><p class="hook"><b>HOOK</b> ${esc(t.hook)}</p></div>`).join("");
+  });
+  $("ll").innerHTML = h || `<p class="note">No match.</p>`;
+}
+home();
+
+</script>
+<script>if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceWorker.register("sw.js");</script>
+</body>
+</html>
