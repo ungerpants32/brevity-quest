@@ -337,7 +337,14 @@ const TEST_DEFAULT = ""; // build fills this for the private copy; the public co
 const LESSON = "";
 const testDate = () => S.test ? new Date(S.test) : TEST_DEFAULT ? new Date(TEST_DEFAULT) : null;
 const fmtDate = d => d.toLocaleString(undefined, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
-function setTest(v){ if (v) { S.test = new Date(v).toISOString(); save(); } home(); }
+// iOS fires "change" while the date wheel is still spinning, so nothing saves until the Save tap.
+function setTest(){
+  const d = ($("td") || {}).value, t = ($("tt") || {}).value || "08:00", msg = $("tdm");
+  const when = d ? new Date(d + "T" + t) : null;
+  if (!when || isNaN(when)) { msg.textContent = "Pick a date first."; return; }
+  if (when <= Date.now()) { msg.textContent = "That's in the past. Pick your test day."; return; }
+  S.test = when.toISOString(); save(); home();
+}
 const T = D.terms.filter(t => !t.x);
 const BY = {}; D.terms.forEach(t => BY[t.t] = t);
 const $ = id => document.getElementById(id);
@@ -760,7 +767,8 @@ function home(){
     <div class="streak">${streak()}🔥<small>day streak</small></div>
   </div>
   <div class="panel count">${TD ? `<div><div class="lbl">Brevity test · ${esc(fmtDate(TD))}</div>${ms > 0 ? `<b class="tab">${days}d ${hrs}h</b>` : `<b>Test day</b>`}<div><button class="ghost" style="padding:4px 8px;margin-top:4px" onclick="S.test=null;save();home()">${TEST_DEFAULT ? "Change" : "Change date"}</button></div></div>`
-    : `<div><div class="lbl">When is your test?</div><input type="datetime-local" class="search" style="margin-top:6px" onchange="setTest(this.value)"><div class="note">Saved on this phone only.</div></div>`}<div class="note">${LESSON ? esc(LESSON) + "<br>" : ""}${seen}/100 seen · ${m} mastered · ${dueN} due</div></div>
+    : `<div><div class="lbl">When is your test?</div><div class="row" style="margin-top:6px;flex-wrap:wrap"><input type="date" id="td" class="search" style="flex:1 1 150px;width:auto"><input type="time" id="tt" value="08:00" class="search" style="flex:0 1 120px;width:auto"></div>
+      <button class="go" style="margin-top:8px;width:100%" onclick="setTest()">Save test date</button><div class="note" id="tdm">Saved on this phone only.</div></div>`}<div class="note">${LESSON ? esc(LESSON) + "<br>" : ""}${seen}/100 seen · ${m} mastered · ${dueN} due</div></div>
   <div class="panel"><div class="lbl">Memory ladder · terms at each level</div><div class="ladder" title="levels 0 to 6">${lvCount.map((c, l) => `<i style="background:color-mix(in srgb,var(--acc) ${l === 0 ? 0 : 15 + l * 14}%,var(--tint));flex:${Math.max(c, .6)}"></i>`).join("")}</div>
     <div class="lbl" style="margin-top:6px">${lvCount.map((c, l) => `L${l} ${c}`).join(" · ")}</div></div>
   ${(() => { // pace: level climbs left vs days left; a sortie yields about 12 climbs

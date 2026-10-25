@@ -1,5 +1,5 @@
 // Offline cache for Brevity Quest. Bump VER on every publish so phones pick up the new build.
-const VER = "bq-mvne8vk1";
+const VER = "bq-mvnekvwl";
 const FILES = ["./", "./index.html", "./manifest.json", "./apple-touch-icon.png", "./icon-192.png", "./icon-512.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(VER).then(c => c.addAll(FILES)).then(() => self.skipWaiting())); });
 self.addEventListener("activate", e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== VER).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
